@@ -1,0 +1,2 @@
+-- No-op on fresh databases.
+-- The production schema is created by 20260602000000_refactor_production_relations.

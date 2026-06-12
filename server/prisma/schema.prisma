@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Devices {
+  DeviceId        Int        @id @default(autoincrement())
+  DeviceCode      String     @unique @db.NVarChar(50)
+  DeviceType      String?    @db.VarChar(255)
+  SerialNo        String?    @db.VarChar(255)
+  Status          Boolean    @default(false)
+  RegisteredAt    DateTime   @default(now()) @db.DateTime
+  Active          Boolean    @default(true)
+  DeviceName      String?    @db.NVarChar(255)
+  ActiveUpdatedAt DateTime?  @db.DateTime
+  StatusUpdatedAt DateTime?  @db.DateTime
+  LocationCode    String?    @db.NVarChar(50)
+  Location        Location?  @relation(fields: [LocationCode], references: [LocationCode], onUpdate: NoAction)
+  EventLogs       EventLog[]
+  Missions        Missions[]
+
+  @@index([Active, Status])
+}
+
+model Location {
+  LocationId   Int        @id @default(autoincrement())
+  LocationCode String     @unique @db.NVarChar(50)
+  Latitude     Decimal?   @db.Decimal(9, 6)
+  Longitude    Decimal?   @db.Decimal(9, 6)
+  LocationName String?    @db.NVarChar(255)
+  CreatedAt    DateTime   @default(now()) @db.DateTime
+  devices      Devices[]
+  Missions     Missions[]
+
+  @@index([CreatedAt])
+}
+
+model LoginLogs {
+  LogId         Int      @id @default(autoincrement())
+  UserId        Int?
+  Username      String   @db.VarChar(255)
+  IsSuccess     Boolean
+  FailureReason String?  @db.VarChar(Max)
+  DeviceId      String?  @db.NVarChar(50)
+  LoggedAt      DateTime @default(now()) @db.DateTime
+  Users         Users?   @relation(fields: [UserId], references: [UserId], onUpdate: NoAction)
+
+  @@index([UserId])
+}
+
+model LoginSession {
+  SessionId        Int      @id @default(autoincrement())
+  UserId           Int
+  RefreshTokenHash String   @db.NVarChar(255)
+  DeviceId         String   @db.NVarChar(100)
+  ExpiresAt        DateTime
+  CreatedAt        DateTime @default(now()) @db.DateTime
+  LastUsedAt       DateTime @default(now()) @db.DateTime
+  Users            Users    @relation(fields: [UserId], references: [UserId], onUpdate: NoAction)
+
+  @@index([UserId])
+}
+
+model Missions {
+  MissionId     Int        @id @default(autoincrement())
+  ReportId      String     @unique @db.NVarChar(100)
+  MissionName   String?    @db.NVarChar(400)
+  StartTime     DateTime?  @db.DateTime
+  EndTime       DateTime?  @db.DateTime
+  Description   String?    @db.NVarChar(Max)
+  OfficerId     Int?
+  LocationCode  String?    @db.NVarChar(50)
+  MissionStatus String     @default("1") @db.NVarChar(50)
+  DeviceCode    String?    @db.NVarChar(50)
+  CreatedAt     DateTime   @default(now()) @db.DateTime
+  Duration      Int?
+  Latitude      Decimal?   @db.Decimal(9, 6)
+  Longitude     Decimal?   @db.Decimal(9, 6)
+  Note          String?    @db.NVarChar(500)
+  Priority      String?    @db.NVarChar(50)
+  EventLogs     EventLog[]
+  Devices       Devices?   @relation(fields: [DeviceCode], references: [DeviceCode], onDelete: NoAction, onUpdate: NoAction)
+  Location      Location?  @relation(fields: [LocationCode], references: [LocationCode], onDelete: NoAction, onUpdate: NoAction)
+  Officers      Officers?  @relation(fields: [OfficerId], references: [OfficerId], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([DeviceCode])
+  @@index([LocationCode])
+  @@index([OfficerId])
+  @@index([MissionStatus])
+  @@index([CreatedAt, MissionId])
+  @@index([DeviceCode, MissionStatus, CreatedAt])
+}
+
+model Officers {
+  OfficerId   Int        @id @default(autoincrement())
+  CreatedAt   DateTime   @default(now()) @db.DateTime
+  FirstName   String?    @db.NVarChar(50)
+  LastName    String?    @db.NVarChar(50)
+  Telephone   String?    @db.NVarChar(50)
+  Position    String?    @db.NVarChar(100)
+  OfficerName String?    @db.NVarChar(50)
+  Missions    Missions[]
+}
+
+model Roles {
+  RoleId        Int     @id @default(autoincrement())
+  RoleName      String  @db.VarChar(255)
+  SecurityLevel Int
+  Users         Users[]
+}
+
+model Users {
+  UserId        Int            @id @default(autoincrement())
+  Username      String         @unique @db.VarChar(255)
+  PasswordHash  String         @db.VarChar(255)
+  RoleId        Int?
+  Active        Boolean        @default(true)
+  CreatedAt     DateTime       @default(now()) @db.DateTime
+  UpdatedAt     DateTime       @default(now()) @updatedAt @db.DateTime
+  LoginLogs     LoginLogs[]
+  LoginSessions LoginSession[]
+  Roles         Roles?         @relation(fields: [RoleId], references: [RoleId], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([RoleId])
+}
+
+model EventLog {
+  LogId        Int       @id @default(autoincrement())
+  TypeKey      String    @db.NVarChar(50)
+  OfficerName  String    @db.NVarChar(255)
+  EventTime    DateTime  @default(now()) @db.DateTime
+  Severity     String    @db.NVarChar(20)
+  LocationName String?   @db.NVarChar(255)
+  Details      String?   @db.NVarChar(Max)
+  IsRead       Boolean   @default(false)
+  DeviceCode   String?   @db.NVarChar(50)
+  MissionId    Int?
+  Devices      Devices?  @relation(fields: [DeviceCode], references: [DeviceCode], onDelete: NoAction, onUpdate: NoAction)
+  Missions     Missions? @relation(fields: [MissionId], references: [MissionId], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([DeviceCode])
+  @@index([MissionId])
+  @@index([EventTime])
+  @@index([IsRead, EventTime])
+}
+
+model Proxy_Users {
+  id            Int       @id(map: "PK__Proxy_Us__3213E83FB7ED829A")
+  username      String    @unique(map: "UX_Proxy_Users_username") @db.NVarChar(100)
+  password      String    @db.NVarChar(255)
+  user_level    Int
+  status        Boolean
+  refresh_token String?   @db.NVarChar(Max)
+  created_at    DateTime  @default(now(), map: "DF_Proxy_Users_created_at") @db.DateTime
+  updated_at    DateTime? @db.DateTime
+}
