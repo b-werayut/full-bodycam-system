@@ -105,10 +105,15 @@ export function Sidebar({
             >
               <Globe className="w-5 h-5" />
               <span className="flex-1">{language === 'th' ? 'ภาษา' : 'Language'}</span>
-              <span className={`px-3 py-1 rounded-lg text-sm font-bold ${
-                darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-[#0c274b]'
-              }`}>
-                {language.toUpperCase()}
+              <span className={`relative block w-14 h-8 rounded-full transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-gray-200'}`}>
+                <span className={`absolute inset-y-0 ${language === 'th' ? 'right-0' : 'left-0'} w-7 flex items-center justify-center text-[10px] font-bold uppercase leading-none tracking-wide ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {language === 'th' ? 'en' : 'th'}
+                </span>
+                <span className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-300 ${language === 'th' ? 'left-1' : 'left-7'}`}>
+                  <span className="text-[10px] font-bold uppercase leading-none tracking-wide text-[#2563EB]">
+                    {language}
+                  </span>
+                </span>
               </span>
             </button>
 
