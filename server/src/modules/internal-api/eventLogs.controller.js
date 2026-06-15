@@ -49,31 +49,6 @@ const mapRelatedMission = (mission) => {
   };
 };
 
-const attachMissionLocation = async (mission) => {
-  if (!mission || mission.Location || !mission.LocationCode) {
-    return mission;
-  }
-
-  try {
-    const location = await prisma.location.findUnique({
-      where: {
-        LocationCode: mission.LocationCode,
-      },
-      select: missionLocationSelect,
-    });
-
-    return location ? { ...mission, Location: location } : mission;
-  } catch (error) {
-    console.warn("event log mission location lookup failed:", {
-      code: error?.code,
-      message: error?.message,
-    });
-    return mission;
-  }
-};
-
-const mapRelatedMissionWithLocation = async (mission) => mapRelatedMission(await attachMissionLocation(mission));
-
 const getEventLogDeviceInfo = (log) => {
   const details = log.Details || "";
   const deviceMatch = details.match(/อุปกรณ์\s+(.+?)\s+\(([^)]+)\)/);
@@ -91,65 +66,28 @@ const warnMissionLookupFailure = (error) => {
   });
 };
 
-const findRelatedMissionForEventLog = async ({ details, deviceCode, eventTime }) => {
-  try {
-    const reportId = getReportIdFromDetails(details);
-
-    if (reportId) {
-      const missionByReport = await prisma.missions.findFirst({
-        where: {
-          ReportId: reportId,
-        },
-        select: missionSelect,
-      });
-
-      if (missionByReport) {
-        return mapRelatedMissionWithLocation(missionByReport);
-      }
-    }
-
-    if (!deviceCode) {
-      return null;
-    }
-
-    const timeWindow = eventTime
-      ? {
-          AND: [
-            {
-              OR: [{ StartTime: null }, { StartTime: { lte: eventTime } }],
-            },
-            {
-              OR: [{ EndTime: null }, { EndTime: { gte: eventTime } }],
-            },
-          ],
-        }
-      : {
-          MissionStatus: {
-            in: ["2", "6"],
-          },
-        };
-
-    const missionByDevice = await prisma.missions.findFirst({
-      where: {
-        DeviceCode: deviceCode,
-        ...timeWindow,
-      },
-      orderBy: [
-        {
-          CreatedAt: "desc",
-        },
-        {
-          MissionId: "desc",
-        },
-      ],
-      select: missionSelect,
-    });
-
-    return mapRelatedMissionWithLocation(missionByDevice);
-  } catch (error) {
-    warnMissionLookupFailure(error);
+// จับคู่ mission จาก device ในหน่วยความจำ (แทน findFirst per-row เดิม)
+// missions ต้องเรียงมาแล้วแบบ CreatedAt desc, MissionId desc เพื่อให้ผลตรงกับ orderBy เดิม
+const matchMissionByDeviceTime = (missions, eventTime) => {
+  if (!Array.isArray(missions) || missions.length === 0) {
     return null;
   }
+
+  if (eventTime) {
+    return (
+      missions.find(
+        (mission) =>
+          (mission.StartTime == null || mission.StartTime <= eventTime) &&
+          (mission.EndTime == null || mission.EndTime >= eventTime),
+      ) || null
+    );
+  }
+
+  return (
+    missions.find(
+      (mission) => mission.MissionStatus === "2" || mission.MissionStatus === "6",
+    ) || null
+  );
 };
 
 const parseEventLogDateQuery = (value, boundary = "start") => {
@@ -194,10 +132,24 @@ const parseEventLogLimitQuery = (value) => {
   return Math.min(parsed, 500);
 };
 
+const parseEventLogOffsetQuery = (value) => {
+  if (!value) return 0;
+
+  const rawValue = Array.isArray(value) ? value[0] : String(value);
+  const parsed = Number.parseInt(rawValue, 10);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return 0;
+  }
+
+  return parsed;
+};
+
 exports.getEventLogs = async (req, res) => {
   try {
-    const { startDate, endDate, limit } = req.query;
+    const { startDate, endDate, limit, offset } = req.query;
     const take = parseEventLogLimitQuery(limit);
+    const skip = parseEventLogOffsetQuery(offset);
 
     const where = {};
 
@@ -222,9 +174,9 @@ exports.getEventLogs = async (req, res) => {
 
     const eventLogs = await prisma.eventLog.findMany({
       where,
-      orderBy: {
-        EventTime: "desc",
-      },
+      // LogId เป็น tiebreaker ให้ pagination แบบ skip เสถียร (EventTime ไม่ unique)
+      orderBy: [{ EventTime: "desc" }, { LogId: "desc" }],
+      ...(skip > 0 && { skip }),
       ...(take && { take }),
       include: {
         Devices: {
@@ -239,40 +191,148 @@ exports.getEventLogs = async (req, res) => {
       },
     });
 
-    const result = [];
-    for (const log of eventLogs) {
+    // เตรียม context ต่อ log: mission ที่ผูกตรง (จาก include) จะถูกใช้เลย
+    // ส่วนที่ไม่ผูกตรงค่อยหาแบบ batch (กัน N+1) ด้วย reportId แล้วตามด้วย device+time
+    const logContexts = eventLogs.map((log) => {
       const details = log.Details || "";
       const deviceInfo = getEventLogDeviceInfo(log);
-      const relatedMission =
-        (await mapRelatedMissionWithLocation(log.Missions)) ||
-        (await findRelatedMissionForEventLog({
-          details,
-          deviceCode: deviceInfo.deviceCode,
-          eventTime: log.EventTime,
-        }));
 
-      result.push({
-        id: log.LogId,
-        typeKey: log.TypeKey,
-        officer: log.OfficerName,
-        time: log.EventTime
-          ? new Date(log.EventTime).toLocaleTimeString("th-TH", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : null,
-        date: log.EventTime
-          ? new Date(log.EventTime).toISOString().split("T")[0]
-          : null,
-        severity: log.Severity,
-        location: log.LocationName || "",
+      return {
+        log,
         details,
-        isRead: log.IsRead,
-        deviceName: deviceInfo.deviceName,
-        deviceCode: deviceInfo.deviceCode,
-        mission: relatedMission,
-      });
+        deviceInfo,
+        reportId: log.Missions ? null : getReportIdFromDetails(details),
+        mission: log.Missions || null,
+      };
+    });
+
+    // 1) batch หา mission จาก reportId (ReportId เป็น unique)
+    const reportIds = [
+      ...new Set(
+        logContexts
+          .filter((ctx) => !ctx.mission && ctx.reportId)
+          .map((ctx) => ctx.reportId),
+      ),
+    ];
+
+    if (reportIds.length > 0) {
+      try {
+        const missionsByReport = await prisma.missions.findMany({
+          where: { ReportId: { in: reportIds } },
+          select: missionSelect,
+        });
+        const reportMissionMap = new Map(
+          missionsByReport.map((mission) => [mission.ReportId, mission]),
+        );
+
+        logContexts.forEach((ctx) => {
+          if (!ctx.mission && ctx.reportId && reportMissionMap.has(ctx.reportId)) {
+            ctx.mission = reportMissionMap.get(ctx.reportId);
+          }
+        });
+      } catch (error) {
+        warnMissionLookupFailure(error);
+      }
     }
+
+    // 2) batch หา mission จาก device (สำหรับ log ที่ยังหาไม่เจอและมี deviceCode)
+    const deviceCodes = [
+      ...new Set(
+        logContexts
+          .filter((ctx) => !ctx.mission && ctx.deviceInfo.deviceCode)
+          .map((ctx) => ctx.deviceInfo.deviceCode),
+      ),
+    ];
+
+    if (deviceCodes.length > 0) {
+      try {
+        const missionsByDevice = await prisma.missions.findMany({
+          where: { DeviceCode: { in: deviceCodes } },
+          select: { ...missionSelect, CreatedAt: true },
+        });
+
+        const deviceMissionMap = new Map();
+        missionsByDevice
+          .sort((a, b) => {
+            const aTime = a.CreatedAt ? new Date(a.CreatedAt).getTime() : 0;
+            const bTime = b.CreatedAt ? new Date(b.CreatedAt).getTime() : 0;
+            if (bTime !== aTime) return bTime - aTime;
+            return b.MissionId - a.MissionId;
+          })
+          .forEach((mission) => {
+            const list = deviceMissionMap.get(mission.DeviceCode) || [];
+            list.push(mission);
+            deviceMissionMap.set(mission.DeviceCode, list);
+          });
+
+        logContexts.forEach((ctx) => {
+          if (!ctx.mission && ctx.deviceInfo.deviceCode) {
+            ctx.mission = matchMissionByDeviceTime(
+              deviceMissionMap.get(ctx.deviceInfo.deviceCode),
+              ctx.log.EventTime,
+            );
+          }
+        });
+      } catch (error) {
+        warnMissionLookupFailure(error);
+      }
+    }
+
+    // 3) batch ดึง Location ให้ mission ที่ยังไม่มี Location ติดมา
+    const locationCodes = [
+      ...new Set(
+        logContexts
+          .map((ctx) => ctx.mission)
+          .filter((mission) => mission && !mission.Location && mission.LocationCode)
+          .map((mission) => mission.LocationCode),
+      ),
+    ];
+
+    if (locationCodes.length > 0) {
+      try {
+        const locations = await prisma.location.findMany({
+          where: { LocationCode: { in: locationCodes } },
+          select: { LocationCode: true, ...missionLocationSelect },
+        });
+        const locationMap = new Map(
+          locations.map((location) => [location.LocationCode, location]),
+        );
+
+        logContexts.forEach((ctx) => {
+          const mission = ctx.mission;
+          if (mission && !mission.Location && locationMap.has(mission.LocationCode)) {
+            ctx.mission = { ...mission, Location: locationMap.get(mission.LocationCode) };
+          }
+        });
+      } catch (error) {
+        console.warn("event log location lookup failed:", {
+          code: error?.code,
+          message: error?.message,
+        });
+      }
+    }
+
+    const result = logContexts.map(({ log, details, deviceInfo, mission }) => ({
+      id: log.LogId,
+      typeKey: log.TypeKey,
+      officer: log.OfficerName,
+      time: log.EventTime
+        ? new Date(log.EventTime).toLocaleTimeString("th-TH", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : null,
+      date: log.EventTime
+        ? new Date(log.EventTime).toISOString().split("T")[0]
+        : null,
+      severity: log.Severity,
+      location: log.LocationName || "",
+      details,
+      isRead: log.IsRead,
+      deviceName: deviceInfo.deviceName,
+      deviceCode: deviceInfo.deviceCode,
+      mission: mapRelatedMission(mission),
+    }));
 
     return res.status(200).json(result);
   } catch (error) {

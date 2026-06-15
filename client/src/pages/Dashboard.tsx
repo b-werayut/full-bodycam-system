@@ -55,6 +55,9 @@ import { GPSMapModal } from '../components/modals/GPSMapModal';
 import { CameraStreamModal } from '../components/modals/CameraStreamModal';
 import { isFilterEndBeforeStart } from '../features/dateRangeValidation';
 
+// จำนวนแถวการแจ้งเตือนที่ดึงจาก server ต่อหนึ่งครั้ง (โหลดครั้งแรก + ต่อ "ดูเพิ่ม" แต่ละครั้ง)
+const ALERTS_BATCH_SIZE = 100;
+
 interface DashboardProps {
   language: SupportedLanguage;
   darkMode: boolean;
@@ -161,6 +164,9 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
   // Event Logs state
   const [eventLogs, setEventLogs] = useState<AlertData[]>([]);
   const [eventLogsLoading, setEventLogsLoading] = useState(false);
+  // โหลดทีละ ALERTS_BATCH_SIZE แถวจาก server แล้วกด "ดูเพิ่ม" เพื่อต่อท้าย
+  const [alertsLoadingMore, setAlertsLoadingMore] = useState(false);
+  const [alertHasMore, setAlertHasMore] = useState(false);
   const alertFilterDateRangeInvalid = isFilterEndBeforeStart({
     startDate: alertStartDate,
     endDate: alertEndDate,
@@ -229,6 +235,27 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
     setAlertFilterDateRangeError('');
   };
 
+  // สร้าง query params ของตัวกรองวันที่ (ใช้ร่วมกันทั้งโหลดครั้งแรกและ "ดูเพิ่ม")
+  const buildEventLogFilterParams = () => {
+    const params = new URLSearchParams();
+    const effectiveStartDate = alertStartDate || alertEndDate;
+    const effectiveEndDate = alertEndDate || alertStartDate;
+
+    if (effectiveStartDate) {
+      const startDateTime = alertStartTime
+        ? `${effectiveStartDate}T${alertStartTime}:00`
+        : `${effectiveStartDate}T00:00:00`;
+      params.append('startDate', startDateTime);
+    }
+    if (effectiveEndDate) {
+      const endDateTime = alertEndTime
+        ? `${effectiveEndDate}T${alertEndTime}:00`
+        : `${effectiveEndDate}T23:59:59`;
+      params.append('endDate', endDateTime);
+    }
+    return params;
+  };
+
   const fetchEventLogs = async (showLoading = true) => {
     if (isFilterEndBeforeStart({
       startDate: alertStartDate,
@@ -244,30 +271,44 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
     }
 
     try {
-      const params = new URLSearchParams();
-      const effectiveStartDate = alertStartDate || alertEndDate;
-      const effectiveEndDate = alertEndDate || alertStartDate;
-
-      if (effectiveStartDate) {
-        const startDateTime = alertStartTime
-          ? `${effectiveStartDate}T${alertStartTime}:00`
-          : `${effectiveStartDate}T00:00:00`;
-        params.append('startDate', startDateTime);
-      }
-      if (effectiveEndDate) {
-        const endDateTime = alertEndTime
-          ? `${effectiveEndDate}T${alertEndTime}:00`
-          : `${effectiveEndDate}T23:59:59`;
-        params.append('endDate', endDateTime);
-      }
-      const eventLogs = await getEventLogs(Object.fromEntries(params.entries()));
-      setEventLogs(eventLogs as AlertData[]);
+      const params = buildEventLogFilterParams();
+      params.append('limit', String(ALERTS_BATCH_SIZE));
+      params.append('offset', '0');
+      const logs = (await getEventLogs(Object.fromEntries(params.entries()))) as AlertData[];
+      setEventLogs(logs);
+      // ถ้าได้ครบ batch แสดงว่าน่าจะมีต่อ → เปิดปุ่ม "ดูเพิ่ม"
+      setAlertHasMore(logs.length === ALERTS_BATCH_SIZE);
     } catch (err) {
       console.error('Failed to fetch event logs:', err);
     } finally {
       if (showLoading) {
         setEventLogsLoading(false);
       }
+    }
+  };
+
+  const loadMoreEventLogs = async () => {
+    if (alertsLoadingMore || !alertHasMore) {
+      return;
+    }
+
+    setAlertsLoadingMore(true);
+    try {
+      const params = buildEventLogFilterParams();
+      params.append('limit', String(ALERTS_BATCH_SIZE));
+      params.append('offset', String(eventLogs.length));
+      const more = (await getEventLogs(Object.fromEntries(params.entries()))) as AlertData[];
+
+      setEventLogs((prev) => {
+        const existingIds = new Set(prev.map((item) => item.id));
+        const appended = more.filter((item) => !existingIds.has(item.id));
+        return [...prev, ...appended];
+      });
+      setAlertHasMore(more.length === ALERTS_BATCH_SIZE);
+    } catch (err) {
+      console.error('Failed to load more event logs:', err);
+    } finally {
+      setAlertsLoadingMore(false);
     }
   };
 
@@ -1163,6 +1204,27 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+              )}
+              {alertHasMore && (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={() => void loadMoreEventLogs()}
+                    disabled={alertsLoadingMore}
+                    className={`inline-flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${alertsLoadingMore
+                      ? 'opacity-60 cursor-not-allowed'
+                      : 'cursor-pointer'
+                      } ${darkMode ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                  >
+                    {alertsLoadingMore ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        {language === 'th' ? 'กำลังโหลด...' : 'Loading...'}
+                      </>
+                    ) : (
+                      language === 'th' ? 'ดูเพิ่มเติม' : 'Load more'
+                    )}
+                  </button>
                 </div>
               )}
             </>

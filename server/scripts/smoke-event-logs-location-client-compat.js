@@ -46,24 +46,30 @@ const fakePrisma = {
     },
   },
   location: {
-    findUnique: async (args) => {
+    findMany: async (args) => {
       locationLookupCount += 1;
       assert.deepStrictEqual(args, {
         where: {
-          LocationCode: "LOC-STATION-001",
+          LocationCode: {
+            in: ["LOC-STATION-001"],
+          },
         },
         select: {
+          LocationCode: true,
           LocationName: true,
           Latitude: true,
           Longitude: true,
         },
       });
 
-      return {
-        LocationName: "Station",
-        Latitude: 13.75,
-        Longitude: 100.5,
-      };
+      return [
+        {
+          LocationCode: "LOC-STATION-001",
+          LocationName: "Station",
+          Latitude: 13.75,
+          Longitude: 100.5,
+        },
+      ];
     },
   },
   missions: {

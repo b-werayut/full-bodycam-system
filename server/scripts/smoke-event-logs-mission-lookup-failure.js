@@ -26,6 +26,9 @@ const fakePrisma = {
     findFirst: async () => {
       throw p1001;
     },
+    findMany: async () => {
+      throw p1001;
+    },
   },
 };
 
