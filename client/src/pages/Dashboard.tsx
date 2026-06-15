@@ -23,7 +23,7 @@ import {
   LoaderCircle
 } from 'lucide-react';
 import { type CameraData } from '../features/dashboard/types';
-import { getEventLogs, markEventLogRead } from '../services/eventLogService';
+import { getEventLogs, getEventLogCount, markEventLogRead } from '../services/eventLogService';
 import { requestCameraStream } from '../services/deviceService';
 
 interface AlertData {
@@ -167,6 +167,8 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
   // โหลดทีละ ALERTS_BATCH_SIZE แถวจาก server แล้วกด "ดูเพิ่ม" เพื่อต่อท้าย
   const [alertsLoadingMore, setAlertsLoadingMore] = useState(false);
   const [alertHasMore, setAlertHasMore] = useState(false);
+  // จำนวนการแจ้งเตือนทั้งหมดจริงจาก DB (ไม่ติดลิมิตการโหลดของตาราง)
+  const [totalAlerts, setTotalAlerts] = useState(0);
   const alertFilterDateRangeInvalid = isFilterEndBeforeStart({
     startDate: alertStartDate,
     endDate: alertEndDate,
@@ -312,6 +314,19 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
     }
   };
 
+  // นับการแจ้งเตือนทั้งหมดจาก DB — เป็นยอดรวมทั้งระบบ ไม่ขึ้นกับตัวกรองวันที่ของตาราง
+  const fetchAlertCount = async () => {
+    try {
+      setTotalAlerts(await getEventLogCount());
+    } catch (err) {
+      console.error('Failed to fetch alert count:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAlertCount();
+  }, []);
+
   useEffect(() => {
     setAlertPage(1);
     fetchEventLogs();
@@ -321,6 +336,7 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
   useEffect(() => {
     const handleEventLogNotification = () => {
       fetchEventLogs(false);
+      fetchAlertCount();
       setAlertPage(1);
     };
 
@@ -559,7 +575,6 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
 
   // Use event logs from API (already filtered by backend)
   const alerts = eventLogs;
-  const totalAlerts = eventLogs.length;
   const alertPageCount = Math.max(1, Math.ceil(alerts.length / alertsPerPage));
   const currentAlerts = alerts.slice((alertPage - 1) * alertsPerPage, alertPage * alertsPerPage);
   const getAlertPageNumbers = () => {

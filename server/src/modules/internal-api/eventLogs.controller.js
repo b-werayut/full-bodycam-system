@@ -343,6 +343,19 @@ exports.getEventLogs = async (req, res) => {
   }
 };
 
+exports.getEventLogsCount = async (_req, res) => {
+  try {
+    const count = await prisma.eventLog.count();
+
+    return res.status(200).json({ count });
+  } catch (error) {
+    console.error("getEventLogsCount error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 exports.getUnreadEventLogsCount = async (_req, res) => {
   try {
     // IsRead: { not: true } ครอบคลุมทั้ง false และ null (ตรงกับ isRead !== true ฝั่ง client)

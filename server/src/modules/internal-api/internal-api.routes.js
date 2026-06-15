@@ -11,7 +11,7 @@ const {
   completeMission,
   cancelMission,
 } = require("./missions.controller");
-const { getEventLogs, markEventLogRead, getUnreadEventLogsCount } = require("./eventLogs.controller");
+const { getEventLogs, markEventLogRead, getUnreadEventLogsCount, getEventLogsCount } = require("./eventLogs.controller");
 
 const router = express.Router();
 
@@ -26,6 +26,7 @@ router.get("/getalldevices", authenticateToken, getAllDevices);
 
 // Event Logs
 router.get("/geteventlogs", authenticateToken, getEventLogs);
+router.get("/eventlogs/count", authenticateToken, getEventLogsCount);
 router.get("/eventlogs/unread-count", authenticateToken, getUnreadEventLogsCount);
 router.patch("/eventlogs/:id/read", authenticateToken, markEventLogRead);
 
