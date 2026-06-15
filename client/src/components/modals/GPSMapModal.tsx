@@ -59,13 +59,11 @@ export function GPSMapModal({
   return (
     <div 
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-in fade-in duration-200 z-[9999]"
-      onClick={onClose}
     >
       <div 
         className={`rounded-3xl max-w-6xl w-full max-h-[95vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden ${
           darkMode ? 'bg-gray-800' : 'bg-white'
         }`}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header - Fixed */}
         <div className={`p-6 shrink-0 border-b ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-800'}`}>
@@ -81,9 +79,9 @@ export function GPSMapModal({
             </div>
             <button
               onClick={onClose}
-              className="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-slate-300 hover:text-white"
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>

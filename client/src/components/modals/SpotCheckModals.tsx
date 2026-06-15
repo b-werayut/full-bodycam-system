@@ -841,8 +841,8 @@ export function ViewModal({ show, item, onClose, translations, language, darkMod
       : 'bg-emerald-500';
 
   return (
-    <div className={modalBackdropClass(darkMode)} onClick={onClose}>
-      <div className={modalSurfaceClass(darkMode, 'max-w-6xl')} onClick={(e) => e.stopPropagation()}>
+    <div className={modalBackdropClass(darkMode)}>
+      <div className={modalSurfaceClass(darkMode, 'max-w-6xl')}>
         {/* Header */}
         <div className={`${modalHeaderClass(darkMode)} flex items-center justify-between gap-4`}>
           <div className="flex min-w-0 items-center gap-4">
@@ -1121,8 +1121,8 @@ export function ViewModal({ show, item, onClose, translations, language, darkMod
 export function DeleteModal({ show, item, onClose, onConfirm, translations, darkMode }: DeleteModalProps) {
   if (!show || !item) return null;
   return (
-    <div className={modalBackdropClass(darkMode)} onClick={onClose}>
-      <div className={modalSurfaceClass(darkMode, 'max-w-md')} onClick={(e) => e.stopPropagation()}>
+    <div className={modalBackdropClass(darkMode)}>
+      <div className={modalSurfaceClass(darkMode, 'max-w-md')}>
         <div className={`${modalHeaderClass(darkMode)} flex items-center justify-between gap-4`}>
           <div className="flex min-w-0 items-center gap-4">
             <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${darkMode ? 'bg-rose-500/15 text-rose-300' : 'bg-rose-50 text-rose-600'}`}>
@@ -1156,8 +1156,8 @@ export function DeleteModal({ show, item, onClose, onConfirm, translations, dark
 export function ActionModal({ show, item, actionType, onClose, onConfirm, translations, darkMode }: ActionModalProps) {
   if (!show || !item || !actionType) return null;
   return (
-    <div className={modalBackdropClass(darkMode)} onClick={onClose}>
-      <div className={modalSurfaceClass(darkMode, 'max-w-md')} onClick={(e) => e.stopPropagation()}>
+    <div className={modalBackdropClass(darkMode)}>
+      <div className={modalSurfaceClass(darkMode, 'max-w-md')}>
         <div className={`${modalHeaderClass(darkMode)} flex items-center justify-between gap-4`}>
           <div className="flex min-w-0 items-center gap-4">
             <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
@@ -1218,8 +1218,8 @@ export function ActionModal({ show, item, actionType, onClose, onConfirm, transl
 export function SuccessModal({ show, onClose, darkMode, reportId, missionName }: SuccessModalProps) {
   if (!show) return null;
   return (
-    <div className={modalBackdropClass(darkMode)} onClick={onClose}>
-      <div className={modalSurfaceClass(darkMode, 'max-w-md')} onClick={(e) => e.stopPropagation()}>
+    <div className={modalBackdropClass(darkMode)}>
+      <div className={modalSurfaceClass(darkMode, 'max-w-md')}>
         <div className={`${modalHeaderClass(darkMode)} flex items-center justify-center`}>
           <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${darkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-50 text-emerald-600'}`}>
             <CheckCircle className="h-8 w-8" />

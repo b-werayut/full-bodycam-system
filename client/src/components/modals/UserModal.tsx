@@ -178,9 +178,9 @@ export function UserModal({ user, mode, darkMode, onClose, onSave, onDelete, tra
                 
                 <button
                   onClick={onClose}
-                  className={`cursor-pointer rounded-md p-2.5 transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`}
+                  className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
                 >
-                  <X className="w-7 h-7 group-hover:rotate-90 transition-transform duration-300" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -372,9 +372,9 @@ export function UserModal({ user, mode, darkMode, onClose, onSave, onDelete, tra
               
               <button
                 onClick={onClose}
-                className={`cursor-pointer rounded-md p-2.5 transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`}
+                className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
               >
-                <X className="w-7 h-7 group-hover:rotate-90 transition-transform duration-300" />
+                <X className="h-5 w-5" />
               </button>
             </div>
           </div>

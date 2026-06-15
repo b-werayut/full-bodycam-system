@@ -284,8 +284,8 @@ export function ReportDetailModal({ report, darkMode, language, onClose }: Repor
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-white/60 hover:text-white transition-all p-2.5 hover:bg-white/10 rounded-xl group cursor-pointer">
-            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+          <button onClick={onClose} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white">
+            <X className="h-5 w-5" />
           </button>
         </div>
 

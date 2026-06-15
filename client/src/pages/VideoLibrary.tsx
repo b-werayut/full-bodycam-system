@@ -566,27 +566,25 @@ export function VideoLibrary({ darkMode, language = 'th' }: VideoLibraryProps) {
             </div>
 
             {/* Pagination */}
-            <div className={`border-t px-5 py-4 ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'}`}>
+            <div className={`border-t px-6 py-4 ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'}`}>
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <label className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{translations.itemsPerPage}:</label>
-                  <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className={`h-8 rounded-md border px-2 text-xs outline-none cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-700'}`}>
+                <div className="order-3 flex items-center gap-2">
+                  <label className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{translations.itemsPerPage}:</label>
+                  <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className={`h-8 rounded-md border px-2 text-sm font-semibold cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-600'} focus:outline-none focus:ring-2 focus:ring-emerald-500/30`}>
                     <option value={5}>5</option>
                     <option value={10}>10</option>
                     <option value={20}>20</option>
                     <option value={50}>50</option>
                   </select>
                 </div>
-                <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {translations.showing} {startIndex + 1} {translations.to} {Math.min(endIndex, filteredData.length)} {translations.of} {filteredData.length} {translations.items}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${currentPage === 1 ? darkMode ? 'cursor-not-allowed bg-slate-800 text-slate-600' : 'cursor-not-allowed bg-slate-100 text-slate-300' : darkMode ? 'cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700' : 'cursor-pointer bg-slate-100 text-slate-500 hover:bg-slate-200'}`}><ChevronLeft className="w-4 h-4" /></button>
+                <div className={`order-1 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{translations.showing} {startIndex + 1} - {Math.min(endIndex, filteredData.length)} {translations.of} {filteredData.length}</div>
+                <div className="order-2 flex items-center gap-1">
+                  <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className={`flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium transition-all ${currentPage === 1 ? 'opacity-40 cursor-not-allowed' : darkMode ? 'cursor-pointer hover:bg-slate-800' : 'cursor-pointer hover:bg-slate-100'} ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}><ChevronLeft className="w-4 h-4" /></button>
                   {getPageNumbers().map((page, index) => {
-                    if (page === '...') return <span key={`ellipsis-${index}`} className={`px-3 py-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>...</span>;
-                    return <button key={page} onClick={() => handlePageChange(page as number)} className={`h-8 min-w-8 rounded-md px-2 text-xs font-semibold transition-colors cursor-pointer ${currentPage === page ? darkMode ? 'bg-slate-800 text-slate-300 ring-1 ring-slate-700' : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' : darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>{page}</button>;
+                    if (page === '...') return <span key={`ellipsis-${index}`} className={`px-2 py-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>...</span>;
+                    return <button key={page} onClick={() => handlePageChange(page as number)} className={`flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm font-bold transition-all ${currentPage === page ? darkMode ? 'bg-slate-800 text-slate-300 ring-1 ring-slate-700' : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' : darkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>{page}</button>;
                   })}
-                  <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages} className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${currentPage >= totalPages ? darkMode ? 'cursor-not-allowed bg-slate-800 text-slate-600' : 'cursor-not-allowed bg-slate-100 text-slate-300' : darkMode ? 'cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700' : 'cursor-pointer bg-slate-100 text-slate-500 hover:bg-slate-200'}`}><ChevronRight className="w-4 h-4" /></button>
+                  <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages} className={`flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium transition-all ${currentPage >= totalPages ? 'opacity-40 cursor-not-allowed' : darkMode ? 'cursor-pointer hover:bg-slate-800' : 'cursor-pointer hover:bg-slate-100'} ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}><ChevronRight className="w-4 h-4" /></button>
                 </div>
               </div>
             </div>

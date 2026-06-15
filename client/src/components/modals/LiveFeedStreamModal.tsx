@@ -182,11 +182,9 @@ export function LiveFeedStreamModal({
   return (
     <div
       className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200 ${darkMode ? 'bg-slate-950/80' : 'bg-slate-900/50'}`}
-      onClick={onClose}
     >
       <div
         className={`flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border shadow-2xl animate-in zoom-in-95 duration-200 ${shell}`}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className={`flex shrink-0 items-center justify-between gap-3 border-b px-5 py-4 ${chromeBorder}`}>

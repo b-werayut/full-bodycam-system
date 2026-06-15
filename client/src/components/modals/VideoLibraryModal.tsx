@@ -663,7 +663,6 @@ export function VideoLibraryModal({ show, video, onClose, translations, language
     muted: darkMode ? 'text-slate-400' : 'text-slate-500',
     faint: darkMode ? 'text-slate-500' : 'text-slate-400',
     input: darkMode ? 'border-white/10 bg-slate-950 text-white [color-scheme:dark]' : 'border-slate-300 bg-white text-slate-900',
-    close: darkMode ? 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white hover:rotate-90' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 hover:rotate-90',
     secondaryButton: darkMode ? 'bg-slate-800 text-slate-100 ring-1 ring-white/15 hover:bg-slate-700 hover:ring-white/25' : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300',
     disabledButton: darkMode ? 'bg-white/5 text-slate-600' : 'bg-slate-100 text-slate-400',
     track: darkMode ? 'bg-white/10' : 'bg-slate-200',
@@ -698,7 +697,7 @@ export function VideoLibraryModal({ show, video, onClose, translations, language
           <button
             onClick={onClose}
             aria-label={translations.close}
-            className={`shrink-0 cursor-pointer rounded-xl p-2 transition-all duration-200 ${theme.close}`}
+            className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
           >
             <X className="h-5 w-5" />
           </button>

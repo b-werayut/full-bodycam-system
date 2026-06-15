@@ -259,8 +259,8 @@ export function ReportDetailModal({ report, darkMode, language, onClose }: Repor
               )}
             </div>
           </div>
-          <button onClick={onClose} aria-label={translations.deleteCancel} className={`group flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}>
-            <X className="h-5 w-5 transition-transform duration-300 group-hover:rotate-90" />
+          <button onClick={onClose} aria-label={translations.deleteCancel} className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}>
+            <X className="h-5 w-5" />
           </button>
         </div>
 

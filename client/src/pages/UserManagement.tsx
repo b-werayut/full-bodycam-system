@@ -105,10 +105,10 @@ function UserDetailModal({ user, darkMode, language, translations, onClose }: Us
             </div>
             <button
               onClick={onClose}
-              className={`cursor-pointer rounded-md p-2.5 transition-colors ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`}
+              className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
               aria-label={translations.cancel}
             >
-              <X className="w-6 h-6" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -468,8 +468,10 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
     });
   }, [filterRole, filterStatus, searchTerm, users]);
 
-  const activeUsers = useMemo(() => users.filter((user) => user.status === 'active').length, [users]);
-  const inactiveUsers = users.length - activeUsers;
+  // SuperAdmin ไม่แสดงในตาราง จึงไม่นับรวมในสถิติด้วย เพื่อให้ตัวเลขตรงกับตาราง
+  const manageableUsers = useMemo(() => users.filter((user) => user.roleId !== ROLE_IDS.superAdmin), [users]);
+  const activeUsers = useMemo(() => manageableUsers.filter((user) => user.status === 'active').length, [manageableUsers]);
+  const inactiveUsers = manageableUsers.length - activeUsers;
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -506,7 +508,7 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: translations.totalUsers, value: users.length, icon: Users, iconBg: 'bg-sky-600' },
+          { label: translations.totalUsers, value: manageableUsers.length, icon: Users, iconBg: 'bg-sky-600' },
           { label: translations.activeUsers, value: activeUsers, icon: UserCheck, iconBg: 'bg-emerald-600' },
           { label: translations.inactiveUsers, value: inactiveUsers, icon: UserX, iconBg: 'bg-rose-600', isAlert: inactiveUsers > 0 },
           { label: translations.filteredUsers, value: filteredUsers.length, icon: Users, iconBg: 'bg-indigo-600' },
@@ -754,13 +756,13 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
         </div>
 
         {/* Pagination */}
-        <div className={`border-t px-5 py-4 ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'}`}>
+        <div className={`border-t px-6 py-4 ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'}`}>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className="order-3 flex items-center gap-2">
+              <label className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {translations.itemsPerPage}:
               </label>
-              <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className={`h-8 rounded-md border px-2 text-xs outline-none cursor-pointer focus:border-emerald-500 ${darkMode ? 'border-slate-700 bg-slate-800 text-slate-100' : 'border-slate-200 bg-white text-slate-700'}`}>
+              <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className={`h-8 rounded-md border px-2 text-sm font-semibold cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-600'} focus:outline-none focus:ring-2 focus:ring-emerald-500/30`}>
                 <option value={5}>5</option>
                 <option value={10}>10</option>
                 <option value={20}>20</option>
@@ -768,27 +770,25 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
               </select>
             </div>
 
-            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {translations.showing} {filteredUsers.length > 0 ? indexOfFirstItem + 1 : 0} {translations.to} {Math.min(indexOfLastItem, filteredUsers.length)} {translations.of} {filteredUsers.length} {translations.items}
-            </div>
+            <div className={`order-1 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{translations.showing} {filteredUsers.length > 0 ? indexOfFirstItem + 1 : 0} - {Math.min(indexOfLastItem, filteredUsers.length)} {translations.of} {filteredUsers.length}</div>
 
-            <div className="flex items-center gap-2">
-              <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${currentPage === 1 ? darkMode ? 'cursor-not-allowed bg-slate-800 text-slate-600' : 'cursor-not-allowed bg-slate-100 text-slate-300' : darkMode ? 'cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700' : 'cursor-pointer bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+            <div className="order-2 flex items-center gap-1">
+              <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className={`flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium transition-all ${currentPage === 1 ? 'opacity-40 cursor-not-allowed' : darkMode ? 'cursor-pointer hover:bg-slate-800' : 'cursor-pointer hover:bg-slate-100'} ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
               {getPageNumbers().map((page, index) => {
                 if (page === '...') {
-                  return <span key={`ellipsis-${index}`} className={`px-2 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>...</span>;
+                  return <span key={`ellipsis-${index}`} className={`px-2 py-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>...</span>;
                 }
                 return (
-                  <button key={page} onClick={() => handlePageChange(page as number)} className={`h-8 min-w-8 rounded-md px-2 text-xs font-semibold transition-colors cursor-pointer ${currentPage === page ? darkMode ? 'bg-slate-800 text-slate-300 ring-1 ring-slate-700' : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' : darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
+                  <button key={page} onClick={() => handlePageChange(page as number)} className={`flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm font-bold transition-all ${currentPage === page ? darkMode ? 'bg-slate-800 text-slate-300 ring-1 ring-slate-700' : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' : darkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}>
                     {page}
                   </button>
                 );
               })}
 
-              <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages || totalPages === 0} className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${currentPage >= totalPages || totalPages === 0 ? darkMode ? 'cursor-not-allowed bg-slate-800 text-slate-600' : 'cursor-not-allowed bg-slate-100 text-slate-300' : darkMode ? 'cursor-pointer bg-slate-800 text-slate-300 hover:bg-slate-700' : 'cursor-pointer bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+              <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages || totalPages === 0} className={`flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium transition-all ${currentPage >= totalPages || totalPages === 0 ? 'opacity-40 cursor-not-allowed' : darkMode ? 'cursor-pointer hover:bg-slate-800' : 'cursor-pointer hover:bg-slate-100'} ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
