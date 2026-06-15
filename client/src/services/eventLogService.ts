@@ -15,6 +15,12 @@ export async function getEventLogs(params: Record<string, string | number | unde
   return Array.isArray(response.data) ? (response.data as EventLogNotification[]) : [];
 }
 
+export async function getUnreadEventLogCount(): Promise<number> {
+  const response = await api.get(`/eventlogs/unread-count?_t=${Date.now()}`);
+  const count = (response.data as { count?: number })?.count;
+  return typeof count === 'number' && count >= 0 ? count : 0;
+}
+
 export async function markEventLogRead(id: number) {
   await api.patch(`/eventlogs/${id}/read`);
 }

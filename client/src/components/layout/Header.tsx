@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Bell, Sun, Moon, LogOut, KeyRound,
   Menu, X, AlertCircle, Clock, ChevronDown,
@@ -13,7 +13,7 @@ import { useAuth } from '../../contexts/useAuth';
 import { canAccessUserManagement } from '../../lib/permissions';
 import { getUserDisplayName, getUserRoleName } from '../../lib/userDisplay';
 import { ChangePasswordModal } from '../modals/ChangePasswordModal';
-import { getEventLogs, markEventLogRead } from '../../services/eventLogService';
+import { getEventLogs, getUnreadEventLogCount, markEventLogRead } from '../../services/eventLogService';
 import { changeCurrentUserPassword } from '../../services/userService';
 
 interface ApiErrorLike {
@@ -96,7 +96,10 @@ export function Header({
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
+  // กัน increment ซ้ำ ถ้า notification id เดิมถูก dispatch มามากกว่าหนึ่งครั้ง
+  const countedNotificationIdsRef = useRef<Set<number>>(new Set());
 
   // อัปเดตเวลาทุกวินาที
   useEffect(() => {
@@ -117,7 +120,6 @@ export function Header({
   ];
 
   const alerts = notifications.slice(0, 4);
-  const unreadCount = Math.min(notifications.filter((alert) => alert.isRead !== true).length, 99);
 
   const getNotificationTarget = (alert: NotificationItem) => {
     if (!alert.mission) {
@@ -190,7 +192,12 @@ export function Header({
     const fetchNotifications = async () => {
       setNotificationsLoading(true);
       try {
-        setNotifications(await getEventLogs({ limit: 50 }));
+        const [logs, unread] = await Promise.all([
+          getEventLogs({ limit: 50 }),
+          getUnreadEventLogCount(),
+        ]);
+        setNotifications(logs);
+        setUnreadCount(unread);
       } catch (error) {
         console.error('Failed to fetch header notifications:', error);
       } finally {
@@ -208,6 +215,15 @@ export function Header({
 
       if (incoming.length === 0) {
         return;
+      }
+
+      // log ที่มาแบบ realtime คือรายการใหม่ (ยังไม่อ่าน) — เพิ่มตัวนับ โดยกัน id ซ้ำ
+      const newlyCounted = incoming.filter(
+        (item) => item.id && item.isRead !== true && !countedNotificationIdsRef.current.has(item.id),
+      );
+      if (newlyCounted.length > 0) {
+        newlyCounted.forEach((item) => countedNotificationIdsRef.current.add(item.id));
+        setUnreadCount((prev) => prev + newlyCounted.length);
       }
 
       setNotifications((prev) => {
@@ -238,6 +254,8 @@ export function Header({
         return;
       }
 
+      // eventlog:read ถูก dispatch เฉพาะตอนเปลี่ยนจากยังไม่อ่าน -> อ่านแล้ว (มี guard ทั้งฝั่ง Header และ Dashboard)
+      setUnreadCount((prev) => Math.max(0, prev - 1));
       setNotifications((prev) =>
         prev.map((item) => (item.id === id ? { ...item, isRead: true } : item)),
       );
@@ -310,7 +328,7 @@ export function Header({
                 <Bell className="w-[18px] h-[18px]" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 flex items-center justify-center rounded-full text-[11px] font-medium bg-red-500 text-white leading-none">
-                    {unreadCount}
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
