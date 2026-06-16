@@ -59,36 +59,6 @@ async function safeCreateLoginLog(data) {
   }
 }
 
-async function safeUpsertUserDevice(data) {
-  try {
-    await usersRepository.upsertUserDevice(data);
-  } catch (error) {
-    // Push token registration should never block the authentication flow.
-    console.error("Upsert user device failed:", error?.message || error);
-  }
-}
-
-async function safeUnregisterDevice({ userId, deviceId, firebaseToken }) {
-  const token = typeof firebaseToken === "string" ? firebaseToken.trim() : "";
-  const device = typeof deviceId === "string" ? deviceId.trim() : "";
-
-  // ต้องมีอย่างน้อย token ตรงตัว หรือ (userId + deviceId) จึงจะ unregister ได้อย่างปลอดภัย
-  if (!token && !(userId && device)) {
-    return;
-  }
-
-  try {
-    await usersRepository.deactivateUserDevice({
-      userId: userId || null,
-      deviceId: device || null,
-      firebaseToken: token || null,
-    });
-  } catch (error) {
-    // Device unregister should never block logout.
-    console.error("Unregister device failed:", error?.message || error);
-  }
-}
-
 function getRefreshExpiryDate() {
   return new Date(Date.now() + config.auth.refreshTokenExpiresInSeconds * 1000);
 }
@@ -144,7 +114,6 @@ async function login(payload = {}) {
     password,
     deviceId = "web",
     platform = "web",
-    firebaseToken,
   } = payload;
   const isMobile = platform === "mobile";
   const loginLogPlatform = isMobile ? "mobile" : "web";
@@ -211,16 +180,6 @@ async function login(payload = {}) {
     IsSuccess: true,
     DeviceId: loginLogPlatform,
   });
-
-  // ลงทะเบียน FCM token ของเครื่อง (เฉพาะ mobile ที่ส่ง firebaseToken มา) สำหรับ push notification
-  if (isMobile && typeof firebaseToken === "string" && firebaseToken.trim()) {
-    await safeUpsertUserDevice({
-      userId: user.UserId,
-      deviceId,
-      firebaseToken: firebaseToken.trim(),
-      platform: "mobile",
-    });
-  }
 
   const body = {
     message: "Login successful",
@@ -295,29 +254,12 @@ async function refresh(payload = {}, cookieRefreshToken) {
 }
 
 async function logout(payload = {}, cookieRefreshToken) {
-  const {
-    refreshToken: bodyRefreshToken,
-    platform = "web",
-    deviceId,
-    firebaseToken,
-  } = payload;
+  const { refreshToken: bodyRefreshToken, platform = "web" } = payload;
   const isMobile = platform === "mobile";
   const refreshToken = isMobile ? bodyRefreshToken : cookieRefreshToken;
 
-  let userId = null;
   if (refreshToken) {
-    const tokenHash = hashRefreshToken(refreshToken);
-    if (isMobile) {
-      // อ่าน session ก่อนลบ เพื่อรู้ UserId ไว้ scope การ unregister device token
-      const session = await usersRepository.findLoginSessionByRefreshTokenHash(tokenHash);
-      userId = session?.UserId ?? null;
-    }
-    await usersRepository.deleteLoginSessionsByHash(tokenHash);
-  }
-
-  // ปลด FCM token ของเครื่องที่ logout (เฉพาะ mobile) — token อาจถูกส่งมาแม้ refresh token หมดอายุแล้ว
-  if (isMobile) {
-    await safeUnregisterDevice({ userId, deviceId, firebaseToken });
+    await usersRepository.deleteLoginSessionsByHash(hashRefreshToken(refreshToken));
   }
 
   return toResult(200, { message: "Logout successful" }, { clearRefreshCookie: !isMobile });
@@ -390,38 +332,6 @@ async function me(authUser) {
   return toResult(200, mapAuthUser(user, role));
 }
 
-// อัปเดต FCM token ของเครื่องโดยไม่ต้อง login ใหม่ (ใช้ตอน FCM rotate token)
-// authenticated -> ได้ userId จาก access token จึงไม่ต้องเชื่อ userId จาก body
-async function updateDeviceToken(authUser, payload = {}) {
-  const userId = Number(authUser?.userId);
-  const { deviceId, firebaseToken, platform } = payload;
-
-  if (!userId || Number.isNaN(userId)) {
-    return toResult(401, { message: "Authentication required" });
-  }
-
-  const normalizedDeviceId = typeof deviceId === "string" ? deviceId.trim() : "";
-  const normalizedToken = typeof firebaseToken === "string" ? firebaseToken.trim() : "";
-
-  if (!normalizedDeviceId) {
-    return toResult(400, { message: "deviceId is required" });
-  }
-
-  if (!normalizedToken) {
-    return toResult(400, { message: "firebaseToken is required" });
-  }
-
-  // upsert ด้วย key (UserId, DeviceId) -> token ใหม่ทับแถวเดิมของเครื่องนี้ ไม่เกิดแถวค้าง
-  await usersRepository.upsertUserDevice({
-    userId,
-    deviceId: normalizedDeviceId,
-    firebaseToken: normalizedToken,
-    platform: typeof platform === "string" && platform.trim() ? platform.trim() : "mobile",
-  });
-
-  return toResult(200, { message: "Device token updated" });
-}
-
 module.exports = {
   changePassword,
   login,
@@ -430,5 +340,4 @@ module.exports = {
   refresh,
   register,
   securityLevelFromRoleInt,
-  updateDeviceToken,
 };

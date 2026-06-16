@@ -2,7 +2,7 @@
 
 **Base URL:** `/api_internal`  
 **Version:** 1.0  
-**Last Updated:** 2026-06-16
+**Last Updated:** 2026-06-04
 
 ---
 
@@ -61,7 +61,6 @@ All protected endpoints require `Authorization: Bearer <access_token>` header.
 | password | string | ✅ | Password |
 | deviceId | string | ❌ | Device identifier (default: "web") |
 | platform | string | ❌ | "web" or "mobile" (default: "web") |
-| firebaseToken | string | ❌ | FCM token — registers the device for push when `platform=mobile` |
 
 **Response (200):**
 ```json
@@ -127,8 +126,6 @@ All protected endpoints require `Authorization: Bearer <access_token>` header.
 |-------|------|----------|-------------|
 | refreshToken | string | ❌ | Required for mobile |
 | platform | string | ❌ | "web" or "mobile" |
-| deviceId | string | ❌ | Scopes the FCM token unregister (mobile) |
-| firebaseToken | string | ❌ | Unregisters this FCM token on logout (mobile) |
 
 **Response (200):**
 ```json
@@ -184,78 +181,6 @@ All protected endpoints require `Authorization: Bearer <access_token>` header.
 - `400` - Current password is incorrect / New password validation failed
 - `401` - Authentication required
 - `404` - User not found
-
----
-
-### 1.7 Update Device Token (FCM)
-
-**POST** `/device-token` 🔒
-
-ลงทะเบียน/อัปเดต FCM registration token ของเครื่องสำหรับ push notification **โดยไม่ต้อง login ใหม่** — ใช้รองรับกรณี FCM rotate token ระหว่างที่ผู้ใช้ login ค้างไว้
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| deviceId | string | ✅ | Device identifier (1-100 chars) — key ของเครื่อง ต้องตรงกับที่ส่งตอน login |
-| firebaseToken | string | ✅ | FCM registration token (1-450 chars) |
-| platform | string | ❌ | default `"mobile"` |
-
-**Response (200):**
-```json
-{
-  "message": "Device token updated"
-}
-```
-
-**Behavior:**
-- `userId` มาจาก access token (ไม่อ่านจาก body)
-- upsert ด้วย key `(userId, deviceId)` → token ใหม่ทับแถวเดิม + ตั้ง `IsActive=true` + อัปเดต `LastSeenAt` (ไม่สร้างแถวค้าง)
-
-**Errors:**
-- `400` - Missing deviceId / firebaseToken
-- `401` - Authentication required (no/invalid access token)
-- `500` - Update failed
-
-#### Client integration — ต้องเรียกเมื่อไหร่ (สำคัญสำหรับ login ค้างนาน)
-
-FCM token เป็น **event-driven** (ไม่ refresh ตาม timer และไม่ refresh เพราะ login ค้าง) แต่หมุนได้เมื่อ reinstall / ล้าง app data / Google Play Services อัปเดต / ไม่ได้ใช้งานนาน (~270 วัน) ฯลฯ
-
-ถ้า token หมุนแล้วแอป **ไม่ส่งของใหม่มา** → server ส่ง push ไป token เก่า, FCM ตอบ `registration-token-not-registered`, server ตั้ง `IsActive=false` → **ผู้ใช้เงียบ ไม่ได้รับ noti**
-
-ดังนั้นแอป **ต้อง register token ใน 2 จังหวะ**:
-
-1. **ทุกครั้งที่เปิดแอป / เข้า foreground (และทันทีหลัง login)** — เรียก `getToken()` แล้ว `POST /device-token`
-   - กันเคสที่ token หมุน "ตอนแอปถูก kill" ซึ่ง `onTokenRefresh` ไม่ทำงาน จึงต้อง sync ทุก startup
-2. **`onTokenRefresh` / `onNewToken`** — เมื่อ token หมุนระหว่างใช้งาน ส่ง update ทันที
-
-ถ้า access token หมดอายุ → เรียก `/refresh` ก่อนแล้ว retry `/device-token` หนึ่งครั้ง
-
-**ตัวอย่าง (pseudocode):**
-```js
-async function syncFcmToken() {
-  const token = await messaging().getToken();
-  if (!token) return;
-  try {
-    await api.post('/device-token', {
-      deviceId: DEVICE_ID,          // ค่าคงที่ต่อ install ต้องตรงกับตอน login
-      firebaseToken: token,
-      platform: 'mobile',
-    });
-  } catch (e) {
-    if (e.status === 401) { await refreshAccessToken(); return syncFcmToken(); }
-    throw e;
-  }
-}
-
-// 1) ทุก app start / resume และหลัง login
-onAppStart(syncFcmToken);
-onAppResume(syncFcmToken);
-afterLogin(syncFcmToken);
-
-// 2) ตอน FCM หมุน token
-messaging().onTokenRefresh(syncFcmToken);   // Android service: onNewToken
-```
-
-> **`deviceId`** ต้องเป็นค่าคงที่ต่อ installation (เช่น UUID เก็บใน secure storage หรือ Android `ANDROID_ID`) และเป็นค่าเดียวกับที่ส่งตอน `/login` เพื่อให้ upsert ตรงแถวเดิม ไม่เกิดแถวซ้ำ
 
 ---
 

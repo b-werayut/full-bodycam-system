@@ -16,10 +16,6 @@ function getLoginLogsModel(client = prisma) {
   return client.loginLogs ?? client.LoginLogs;
 }
 
-function getUserDevicesModel(client = prisma) {
-  return client.userDevices ?? client.UserDevices;
-}
-
 function isUniqueUsernameError(error) {
   const target = error?.meta?.target;
   const fields = Array.isArray(target) ? target : [target];
@@ -133,14 +129,6 @@ async function findActiveLoginSessionByRefreshTokenHash(refreshTokenHash, now = 
   });
 }
 
-// หา session จาก refresh token hash โดยไม่กรอง expiry (ใช้ตอน logout เพื่อรู้ UserId ก่อนลบ)
-async function findLoginSessionByRefreshTokenHash(refreshTokenHash) {
-  return getLoginSessionModel().findFirst({
-    where: { RefreshTokenHash: refreshTokenHash },
-    select: { SessionId: true, UserId: true, DeviceId: true },
-  });
-}
-
 async function createLoginSession(data) {
   return getLoginSessionModel().create({ data });
 }
@@ -179,106 +167,16 @@ async function deleteLoginSessionsByUserId(userId) {
   });
 }
 
-// บันทึก/อัปเดต FCM token ของเครื่อง (key = UserId + DeviceId) สำหรับ push notification
-async function upsertUserDevice({ userId, deviceId, firebaseToken, platform = "mobile" }) {
-  const now = new Date();
-
-  return getUserDevicesModel().upsert({
-    where: {
-      UserId_DeviceId: {
-        UserId: userId,
-        DeviceId: deviceId,
-      },
-    },
-    create: {
-      UserId: userId,
-      DeviceId: deviceId,
-      FirebaseToken: firebaseToken,
-      Platform: platform,
-      IsActive: true,
-      LastSeenAt: now,
-    },
-    update: {
-      FirebaseToken: firebaseToken,
-      Platform: platform,
-      IsActive: true,
-      LastSeenAt: now,
-      UpdatedAt: now,
-    },
-  });
-}
-
-// รายการ FCM token ที่ยัง active ทั้งหมด (unique) สำหรับ broadcast push
-async function listActiveDeviceTokens() {
-  const rows = await getUserDevicesModel().findMany({
-    where: { IsActive: true },
-    select: { FirebaseToken: true },
-  });
-
-  return [...new Set(rows.map((row) => row.FirebaseToken).filter(Boolean))];
-}
-
-// ปิดการใช้งาน token ที่ FCM ตอบกลับว่าใช้ไม่ได้แล้ว (unregistered/invalid)
-async function deactivateDeviceTokens(tokens) {
-  if (!Array.isArray(tokens) || tokens.length === 0) {
-    return { count: 0 };
-  }
-
-  return getUserDevicesModel().updateMany({
-    where: { FirebaseToken: { in: tokens } },
-    data: { IsActive: false, UpdatedAt: new Date() },
-  });
-}
-
-// ปิด device token ที่ยัง active แต่ไม่ได้อัปเดต (LastSeenAt) ตั้งแต่ก่อน cutoff — ใช้โดย cleanup job
-async function deactivateDeviceTokensNotSeenSince(cutoff) {
-  return getUserDevicesModel().updateMany({
-    where: {
-      IsActive: true,
-      LastSeenAt: { lt: cutoff },
-    },
-    data: { IsActive: false, UpdatedAt: new Date() },
-  });
-}
-
-// unregister ตอน logout: ปิดแถวที่ match token ตรงตัว หรือเครื่อง (UserId + DeviceId) ของ session นั้น
-// token เป็น unique ต่อ install จึงปลอดภัย ส่วน (UserId, DeviceId) กันกรณี token หมุนและ scope เฉพาะ user นี้
-async function deactivateUserDevice({ userId, deviceId, firebaseToken }) {
-  const conditions = [];
-
-  if (firebaseToken) {
-    conditions.push({ FirebaseToken: firebaseToken });
-  }
-  if (userId && deviceId) {
-    conditions.push({ UserId: userId, DeviceId: deviceId });
-  }
-
-  if (conditions.length === 0) {
-    return { count: 0 };
-  }
-
-  return getUserDevicesModel().updateMany({
-    where: { OR: conditions, IsActive: true },
-    data: { IsActive: false, UpdatedAt: new Date() },
-  });
-}
-
 module.exports = {
   createLoginLog,
   createLoginSession,
   createUser,
-  deactivateDeviceTokens,
-  deactivateDeviceTokensNotSeenSince,
-  deactivateUserDevice,
   deleteLoginLogsByUserId,
   deleteLoginSessionById,
   deleteLoginSessionsByHash,
   deleteLoginSessionsByUserDevice,
   deleteLoginSessionsByUserId,
   deleteUser,
-  findLoginSessionByRefreshTokenHash,
-  listActiveDeviceTokens,
-  upsertUserDevice,
   findActiveLoginSessionByRefreshTokenHash,
   findLatestSuccessfulLogin,
   findRoleById,

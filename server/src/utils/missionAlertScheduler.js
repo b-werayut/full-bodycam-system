@@ -1,5 +1,4 @@
 const { checkOverdueMissions } = require("../modules/internal-api/missionAlerts.service");
-const { notifyEventLog } = require("../modules/notifications/push.service");
 const { config } = require("../config");
 
 let schedulerInterval = null;
@@ -37,8 +36,6 @@ async function runCheck() {
         if (result.success) {
             if (result.logsCreated > 0) {
                 console.log(`[MissionAlertScheduler] Created ${result.logsCreated} event log(s) (${duration}ms)`);
-                // ส่ง push ของ event log ที่เพิ่งสร้าง (fire-and-forget ไม่บล็อก scheduler) — alert จากใบงาน
-                (result.logs || []).forEach((log) => notifyEventLog(log, "mission"));
             } else {
                 console.log(`[MissionAlertScheduler] No overdue missions found (${duration}ms)`);
             }
