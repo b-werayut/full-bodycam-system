@@ -111,3 +111,12 @@ exports.me = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+exports.updateDeviceToken = async (req, res) => {
+  try {
+    return sendResult(req, res, await authService.updateDeviceToken(req.user, req.body));
+  } catch (error) {
+    console.error("Update device token error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
