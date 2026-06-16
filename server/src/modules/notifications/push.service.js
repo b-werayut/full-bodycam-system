@@ -154,8 +154,17 @@ async function sendEventLogPush(eventLog, type) {
       failed += response.failureCount;
 
       response.responses.forEach((res, index) => {
-        if (!res.success && INVALID_TOKEN_ERROR_CODES.has(res.error?.code)) {
-          invalidTokens.push(batch[index]);
+        if (!res.success) {
+          const token = batch[index];
+          // โชว์แค่ prefix ของ token (กันโชว์เต็มใน log) + error code/message เพื่อ debug สาเหตุ fail
+          const tokenHint = typeof token === "string" ? `${token.slice(0, 12)}…` : "";
+          console.warn(
+            `[Push] token fail [${tokenHint}]: ${res.error?.code || "unknown"} — ${res.error?.message || ""}`,
+          );
+
+          if (INVALID_TOKEN_ERROR_CODES.has(res.error?.code)) {
+            invalidTokens.push(token);
+          }
         }
       });
     } catch (error) {
