@@ -123,9 +123,28 @@ model Users {
   UpdatedAt     DateTime       @default(now()) @updatedAt @db.DateTime
   LoginLogs     LoginLogs[]
   LoginSessions LoginSession[]
+  UserDevices   UserDevices[]
   Roles         Roles?         @relation(fields: [RoleId], references: [RoleId], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([RoleId])
+}
+
+model UserDevices {
+  DeviceTokenId Int      @id @default(autoincrement())
+  UserId        Int
+  DeviceId      String   @db.NVarChar(100)
+  FirebaseToken String   @db.NVarChar(450)
+  Platform      String   @default("mobile") @db.NVarChar(20)
+  IsActive      Boolean  @default(true)
+  CreatedAt     DateTime @default(now()) @db.DateTime
+  UpdatedAt     DateTime @default(now()) @db.DateTime
+  LastSeenAt    DateTime @default(now()) @db.DateTime
+  Users         Users    @relation(fields: [UserId], references: [UserId], onUpdate: NoAction)
+
+  @@unique([UserId, DeviceId])
+  @@index([FirebaseToken])
+  @@index([IsActive])
+  @@index([UserId])
 }
 
 model EventLog {
