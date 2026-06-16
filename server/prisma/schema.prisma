@@ -137,7 +137,7 @@ model UserDevices {
   Platform      String   @default("mobile") @db.NVarChar(20)
   IsActive      Boolean  @default(true)
   CreatedAt     DateTime @default(now()) @db.DateTime
-  UpdatedAt     DateTime @default(now()) @db.DateTime
+  UpdatedAt     DateTime @default(now()) @updatedAt @db.DateTime
   LastSeenAt    DateTime @default(now()) @db.DateTime
   Users         Users    @relation(fields: [UserId], references: [UserId], onUpdate: NoAction)
 
