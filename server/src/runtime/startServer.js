@@ -16,6 +16,10 @@ const {
   startMissionAlertScheduler,
   stopMissionAlertScheduler,
 } = require("../utils/missionAlertScheduler");
+const {
+  startDeviceTokenCleanupScheduler,
+  stopDeviceTokenCleanupScheduler,
+} = require("../utils/deviceTokenCleanupScheduler");
 const { prisma } = require("../lib/prisma");
 
 function startServer(options = {}) {
@@ -31,6 +35,7 @@ function startServer(options = {}) {
     startDeviceStatusScheduler();
     startEventLogCleanupScheduler();
     startMissionAlertScheduler();
+    startDeviceTokenCleanupScheduler();
   });
 
   const shutdown = async (signal) => {
@@ -39,6 +44,7 @@ function startServer(options = {}) {
     stopDeviceStatusScheduler();
     stopEventLogCleanupScheduler();
     stopMissionAlertScheduler();
+    stopDeviceTokenCleanupScheduler();
     wss.close();
 
     server.close(async () => {

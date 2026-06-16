@@ -38,6 +38,11 @@ const config = {
     cron: readString("EVENT_LOG_CLEANUP_CRON", "0 0 * * *"),
     timezone: readString("EVENT_LOG_CLEANUP_TIMEZONE", "Asia/Bangkok"),
   },
+  deviceTokenCleanup: {
+    retentionDays: readPositiveInteger("DEVICE_TOKEN_RETENTION_DAYS", 60),
+    cron: readString("DEVICE_TOKEN_CLEANUP_CRON", "0 3 * * *"),
+    timezone: readString("DEVICE_TOKEN_CLEANUP_TIMEZONE", "Asia/Bangkok"),
+  },
   missionAlerts: {
     checkIntervalSeconds: readPositiveInteger("MISSION_ALERT_CHECK_INTERVAL_SECONDS", 60),
     overdueGraceSeconds: readInteger("MISSION_ALERT_OVERDUE_GRACE_SECONDS", 0),
@@ -59,6 +64,13 @@ const config = {
     recordingSearchApiUrl: readString("RECORDING_SEARCH_API_URL", ""),
     username: readString("USER_DSS", ""),
     password: readString("PWD_DSS", ""),
+  },
+  firebase: {
+    pushEnabled: readBoolean("FIREBASE_PUSH_ENABLED", true),
+    serviceAccountPath: readString(
+      "FIREBASE_SERVICE_ACCOUNT_PATH",
+      path.join(rootDir, "firebase", "service_account.json"),
+    ),
   },
 };
 

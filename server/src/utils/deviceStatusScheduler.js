@@ -1,4 +1,5 @@
 const { checkAllOnlineDevices, clearLoggedDevicesCache } = require("../modules/devices/deviceStatus.service");
+const { notifyEventLog } = require("../modules/notifications/push.service");
 const { config } = require("../config");
 
 let schedulerInterval = null;
@@ -42,6 +43,8 @@ async function runCheck() {
         if (result.success) {
             if (result.logsCreated > 0) {
                 console.log(`[DeviceStatusScheduler] Created ${result.logsCreated} event logs (${duration}ms)`);
+                // ส่ง push ของ event log ที่เพิ่งสร้าง (fire-and-forget ไม่บล็อก scheduler) — alert จากอุปกรณ์
+                (result.logs || []).forEach((log) => notifyEventLog(log, "camera"));
             } else {
                 console.log(`[DeviceStatusScheduler] No device status events found (${duration}ms)`);
             }
