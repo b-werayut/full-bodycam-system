@@ -83,7 +83,7 @@ const { getReport } = require("../src/modules/internal-api/reports.controller");
     },
   };
 
-  await getReport({}, res);
+  await getReport({ user: { roleId: 1 } }, res);
 
   assert.strictEqual(res.statusCode, 200);
   assert.strictEqual(res.body[0].reportId, "INT-001");

@@ -5,6 +5,7 @@ export interface AuthUser {
   username: string;
   roleId: number | null;
   roleName: string;
+  locationCode: string | null;
   securityLevel: string;
 }
 

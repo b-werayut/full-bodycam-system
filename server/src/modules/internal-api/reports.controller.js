@@ -1,4 +1,5 @@
 const { prisma } = require("../../lib/prisma");
+const { locationScope } = require("../../utils/locationScope");
 
 function decimalToNumber(value) {
   return value?.toNumber?.() ?? value;
@@ -42,6 +43,8 @@ async function getLocationByCodeMap(locationCodes) {
 exports.getReport = async (req, res) => {
   try {
     const reports = await prisma.missions.findMany({
+      // กรองเฉพาะ mission ใน location ของ user (admin เห็นทุก location)
+      where: { ...locationScope(req.user) },
       orderBy: [
         {
           CreatedAt: "desc",
@@ -124,6 +127,8 @@ exports.getReport = async (req, res) => {
 exports.getLocation = async (req, res) => {
   try {
     const locations = await prisma.location.findMany({
+      // user เห็นเฉพาะ location ตัวเอง (admin เห็นทุก location)
+      where: { ...locationScope(req.user) },
       select: {
         LocationId: true,
         LocationCode: true,
@@ -176,6 +181,8 @@ exports.getLocation = async (req, res) => {
 exports.getOfficerData = async (req, res) => {
   try {
     const officer = await prisma.officers.findMany({
+      // user เห็นเฉพาะ officer ใน location ตัวเอง (admin เห็นทุก location)
+      where: { ...locationScope(req.user) },
       select: {
         OfficerId: true,
         OfficerName: true,

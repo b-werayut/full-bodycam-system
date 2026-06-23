@@ -6,7 +6,7 @@ function sendResult(res, actionResult) {
 
 exports.createMission = async (req, res) => {
   try {
-    return sendResult(res, await missionsService.createMission(req.body));
+    return sendResult(res, await missionsService.createMission(req.body, req.user));
   } catch (error) {
     console.error("createMission error:", error);
 
@@ -18,7 +18,7 @@ exports.createMission = async (req, res) => {
 
 exports.updateMission = async (req, res) => {
   try {
-    return sendResult(res, await missionsService.updateMission(req.body));
+    return sendResult(res, await missionsService.updateMission(req.body, req.user));
   } catch (error) {
     console.error("updateMission error:", error);
 
@@ -30,7 +30,7 @@ exports.updateMission = async (req, res) => {
 
 exports.deleteMission = async (req, res) => {
   try {
-    return sendResult(res, await missionsService.deleteMission(req.body));
+    return sendResult(res, await missionsService.deleteMission(req.body, req.user));
   } catch (error) {
     console.error("deleteMission error:", error);
 
@@ -42,7 +42,7 @@ exports.deleteMission = async (req, res) => {
 
 exports.confirmMission = async (req, res) => {
   try {
-    return sendResult(res, await missionsService.confirmMission(req.body));
+    return sendResult(res, await missionsService.confirmMission(req.body, req.user));
   } catch (error) {
     console.error("confirmMission error:", error);
 
@@ -54,7 +54,7 @@ exports.confirmMission = async (req, res) => {
 
 exports.completeMission = async (req, res) => {
   try {
-    return sendResult(res, await missionsService.completeMission(req.body));
+    return sendResult(res, await missionsService.completeMission(req.body, req.user));
   } catch (error) {
     console.error("completeMission error:", error);
 
@@ -66,7 +66,7 @@ exports.completeMission = async (req, res) => {
 
 exports.cancelMission = async (req, res) => {
   try {
-    return sendResult(res, await missionsService.cancelMission(req.body));
+    return sendResult(res, await missionsService.cancelMission(req.body, req.user));
   } catch (error) {
     console.error("cancelMission error:", error);
 
@@ -78,7 +78,7 @@ exports.cancelMission = async (req, res) => {
 
 exports.deleteCancelledMission = async (req, res) => {
   try {
-    return sendResult(res, await missionsService.deleteCancelledMission(req.body));
+    return sendResult(res, await missionsService.deleteCancelledMission(req.body, req.user));
   } catch (error) {
     console.error("deleteCancelledMission error:", error);
 

@@ -357,6 +357,8 @@ async function createDeviceStatusEventLog({ device, locationName, mission, scena
             LocationName: locationName,
             DeviceCode: device.DeviceCode,
             MissionId: mission?.MissionId || null,
+            // ผูก location ของ event log ตาม device (fallback ไป mission) สำหรับกรองตาม location
+            LocationCode: device.LocationCode ?? mission?.LocationCode ?? null,
             Details: isOfflineWhileActive
                 ? `อุปกรณ์ ${device.DeviceName || device.DeviceCode} (${device.DeviceCode}) ออฟไลน์ระหว่างปฏิบัติงาน | ประเภท: ${device.DeviceType || '-'} | Serial: ${device.SerialNo || '-'} | ReportId: ${mission?.ReportId || '-'}`
                 : `อุปกรณ์ ${device.DeviceName || device.DeviceCode} (${device.DeviceCode}) ออนไลน์แต่ยังไม่ได้เปิดใช้งาน | ประเภท: ${device.DeviceType || '-'} | Serial: ${device.SerialNo || '-'} | ReportId: ${mission?.ReportId || '-'}`,

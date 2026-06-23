@@ -50,7 +50,7 @@ const { completeMission } = require("../src/modules/internal-api/missions.servic
   const response = await completeMission({
     reportId: "INT-001",
     deviceCode: "CAM-001",
-  });
+  }, { roleId: 1 });
   const after = Date.now();
 
   assert.strictEqual(response.statusCode, 200);

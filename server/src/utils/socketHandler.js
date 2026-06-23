@@ -3,29 +3,46 @@ const {
   getLatestEventLogId,
   getNewEventLogNotifications,
 } = require("../modules/realtime/socket.service");
+const { verifyJwt } = require("../modules/auth/token.service");
+const { canAccessLocation } = require("./locationScope");
 
 let deviceStatusInterval = null;
 let eventLogNotificationInterval = null;
 let latestEventLogId = null;
 
+// ดึง user จาก access token ที่ client แนบมาใน query (?token=...) ของ WebSocket upgrade request
+// token เป็น JWT เดียวกับ REST -> มี roleId/locationCode อยู่แล้ว ไม่ต้อง query DB
+const getUserFromRequest = (request) => {
+  try {
+    const url = new URL(request?.url || "", "http://localhost");
+    const token = url.searchParams.get("token");
+    return token ? verifyJwt(token) : null;
+  } catch {
+    return null;
+  }
+};
+
+// กรอง list (devices/notifications) ตาม location ของ client (admin เห็นทั้งหมด, ไม่มี user/location เห็นว่าง)
+const visibleTo = (user, items) => items.filter((item) => canAccessLocation(user, item.locationCode));
+
 const broadcastDeviceStatus = async (wss) => {
   try {
     const devices = await getDevicesWithStatus();
 
+    let sent = 0;
     wss.clients.forEach((client) => {
       if (client.readyState === 1) {
         client.send(
           JSON.stringify({
             type: "deviceStatus",
-            data: devices,
+            data: visibleTo(client.user, devices),
           }),
         );
+        sent += 1;
       }
     });
 
-    console.log(
-      `[DeviceStatus] Broadcasted ${devices.length} devices to ${wss.clients.size} client(s)`,
-    );
+    console.log(`[DeviceStatus] Broadcasted ${devices.length} devices to ${sent} client(s)`);
   } catch (err) {
     console.error("Device status broadcast error:", err);
   }
@@ -51,14 +68,22 @@ const broadcastEventLogNotifications = async (wss) => {
     );
 
     wss.clients.forEach((client) => {
-      if (client.readyState === 1) {
-        client.send(
-          JSON.stringify({
-            type: "notification",
-            data: notifications,
-          }),
-        );
+      if (client.readyState !== 1) {
+        return;
       }
+
+      // ส่งเฉพาะ notification ใน location ของ client คนนั้น (ข้ามถ้าไม่มีอะไรให้ส่ง)
+      const visible = visibleTo(client.user, notifications);
+      if (visible.length === 0) {
+        return;
+      }
+
+      client.send(
+        JSON.stringify({
+          type: "notification",
+          data: visible,
+        }),
+      );
     });
 
     console.log(
@@ -70,8 +95,10 @@ const broadcastEventLogNotifications = async (wss) => {
 };
 
 const setupSocket = (wss) => {
-  wss.on("connection", async (ws) => {
-    console.log("Client connected");
+  wss.on("connection", async (ws, request) => {
+    // ผูก user จาก token เข้ากับ socket ตั้งแต่ handshake เพื่อใช้กรองข้อมูลตาม location
+    ws.user = getUserFromRequest(request);
+    console.log(`Client connected (user ${ws.user?.userId ?? "anonymous"})`);
 
     try {
       ws.on("message", (message) => {
@@ -89,7 +116,7 @@ const setupSocket = (wss) => {
       ws.send(
         JSON.stringify({
           type: "deviceStatus",
-          data: devices,
+          data: visibleTo(ws.user, devices),
         }),
       );
     } catch (err) {

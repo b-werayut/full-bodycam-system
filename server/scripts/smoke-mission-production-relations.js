@@ -127,7 +127,7 @@ const { confirmMission, createMission, deleteCancelledMission, updateMission } =
     missionName: "Patrol",
     missionStatus: "PENDING",
     deviceCode: "CAM-001",
-  });
+  }, { roleId: 1 });
 
   assert.strictEqual(createResponse.statusCode, 201);
   assert.ok(createdMissionData, "mission create data should be captured");
@@ -154,7 +154,7 @@ const { confirmMission, createMission, deleteCancelledMission, updateMission } =
     missionStatus: "PENDING",
     duration: 61,
     note: "test overlap",
-  });
+  }, { roleId: 1 });
 
   assert.strictEqual(locationCodeCreateResponse.statusCode, 201);
   assert.deepStrictEqual(locationLookupWheres[1].where, { LocationCode: "BWC-CP-001" });
@@ -165,7 +165,7 @@ const { confirmMission, createMission, deleteCancelledMission, updateMission } =
   const updateResponse = await updateMission({
     reportId: "INT-001",
     deviceCode: "CAM-001",
-  });
+  }, { roleId: 1 });
 
   assert.strictEqual(updateResponse.statusCode, 200);
   assert.deepStrictEqual(locationLookupWheres[2].where, { DeviceCode: "CAM-001" });
@@ -175,7 +175,7 @@ const { confirmMission, createMission, deleteCancelledMission, updateMission } =
   const confirmResponse = await confirmMission({
     reportId: "INT-001",
     deviceCode: "CAM-001",
-  });
+  }, { roleId: 1 });
 
   assert.strictEqual(confirmResponse.statusCode, 200);
   assert.deepStrictEqual(deviceLookupWhere, { DeviceCode: "CAM-001" });
@@ -185,7 +185,7 @@ const { confirmMission, createMission, deleteCancelledMission, updateMission } =
 
   const deleteResponse = await deleteCancelledMission({
     reportId: "INT-CANCELLED",
-  });
+  }, { roleId: 1 });
 
   assert.strictEqual(deleteResponse.statusCode, 200);
   // ต้องลบ EventLog ก่อน mission เพื่อเลี่ยง FK constraint EventLog_MissionId_fkey

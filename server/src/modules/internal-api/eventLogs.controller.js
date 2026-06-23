@@ -1,4 +1,5 @@
 const { prisma } = require("../../lib/prisma");
+const { locationScope } = require("../../utils/locationScope");
 
 const missionSelect = {
   MissionId: true,
@@ -151,7 +152,8 @@ exports.getEventLogs = async (req, res) => {
     const take = parseEventLogLimitQuery(limit);
     const skip = parseEventLogOffsetQuery(offset);
 
-    const where = {};
+    // กรองเฉพาะ event log ใน location ของ user (admin เห็นทุก location)
+    const where = { ...locationScope(req.user) };
 
     if (startDate || endDate) {
       where.EventTime = {};
@@ -343,9 +345,11 @@ exports.getEventLogs = async (req, res) => {
   }
 };
 
-exports.getEventLogsCount = async (_req, res) => {
+exports.getEventLogsCount = async (req, res) => {
   try {
-    const count = await prisma.eventLog.count();
+    const count = await prisma.eventLog.count({
+      where: locationScope(req.user),
+    });
 
     return res.status(200).json({ count });
   } catch (error) {
@@ -356,7 +360,7 @@ exports.getEventLogsCount = async (_req, res) => {
   }
 };
 
-exports.getUnreadEventLogsCount = async (_req, res) => {
+exports.getUnreadEventLogsCount = async (req, res) => {
   try {
     // IsRead: { not: true } ครอบคลุมทั้ง false และ null (ตรงกับ isRead !== true ฝั่ง client)
     const count = await prisma.eventLog.count({
@@ -364,6 +368,8 @@ exports.getUnreadEventLogsCount = async (_req, res) => {
         IsRead: {
           not: true,
         },
+        // กรองเฉพาะ location ของ user (admin เห็นทุก location)
+        ...locationScope(req.user),
       },
     });
 
@@ -386,20 +392,29 @@ exports.markEventLogRead = async (req, res) => {
       });
     }
 
-    const eventLog = await prisma.eventLog.update({
+    // updateMany + locationScope: non-admin mark read ได้เฉพาะ log ใน location ตัวเอง
+    // ไม่เจอหรืออยู่นอก location -> count 0 -> 404 (ไม่เผยว่ามี log นี้อยู่)
+    const updated = await prisma.eventLog.updateMany({
       where: {
         LogId: logId,
+        ...locationScope(req.user),
       },
       data: {
         IsRead: true,
       },
     });
 
+    if (updated.count === 0) {
+      return res.status(404).json({
+        message: "Event log not found",
+      });
+    }
+
     return res.status(200).json({
       message: "Mark event log read success",
       data: {
-        id: eventLog.LogId,
-        isRead: eventLog.IsRead,
+        id: logId,
+        isRead: true,
       },
     });
   } catch (error) {

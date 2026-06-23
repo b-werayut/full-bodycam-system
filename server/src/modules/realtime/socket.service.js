@@ -164,6 +164,8 @@ const mapEventLogNotification = async (log) => {
     date: log.EventTime ? new Date(log.EventTime).toISOString().split("T")[0] : null,
     severity: log.Severity,
     location: log.LocationName || "",
+    // LocationCode สำหรับให้ socket handler กรอง notification ตาม location ของ client
+    locationCode: log.LocationCode ?? null,
     details,
     isRead: log.IsRead,
     deviceName: deviceInfo.deviceName,

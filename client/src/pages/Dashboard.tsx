@@ -25,6 +25,7 @@ import {
 import { type CameraData } from '../features/dashboard/types';
 import { getEventLogs, getEventLogCount, markEventLogRead } from '../services/eventLogService';
 import { requestCameraStream } from '../services/deviceService';
+import { getAccessToken } from '../services/apiClient';
 
 interface AlertData {
   id: number;
@@ -418,7 +419,10 @@ export function Dashboard({ language, darkMode }: DashboardProps) {
     setGpsLoading(true);
 
     const connectWebSocket = () => {
-      const ws = new WebSocket('/ws');
+      // แนบ access token ใน query เพื่อให้ server ผูก user/location กับ socket (ไม่งั้นเป็น anonymous -> เห็นว่าง)
+      // อ่าน token สดทุกครั้งที่ connect เผื่อ reconnect หลัง token refresh
+      const token = getAccessToken();
+      const ws = new WebSocket(`/ws${token ? `?token=${encodeURIComponent(token)}` : ''}`);
       wsRef.current = ws;
 
       ws.onopen = () => {

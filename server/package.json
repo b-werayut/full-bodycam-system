@@ -10,7 +10,7 @@
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
-    "smoke": "node scripts/smoke-app.js && npm run smoke:auth-boundary && npm run smoke:auth-login-platform && npm run smoke:device-token-lifecycle && npm run smoke:push-event-log && npm run smoke:device-token-cleanup && npm run smoke:user-management-role-boundary && npm run smoke:event-logs-mission-lookup-failure && npm run smoke:event-log-production-relations && npm run smoke:event-logs-location-client-compat && npm run smoke:realtime-event-log-location-client-compat && npm run smoke:emergency-mission-time && npm run smoke:stale-emergency-mission-time && npm run smoke:recent-emergency-mission-location-refresh && npm run smoke:cached-emergency-mission-location-refresh && npm run smoke:confirm-emergency-mission-time && npm run smoke:confirm-early-accept-overlap && npm run smoke:overdue-mission-accept && npm run smoke:mission-production-relations && npm run smoke:mission-overlap-location-compat && npm run smoke:complete-mission-endtime && npm run smoke:reports-production-relations && npm run smoke:reports-location-client-compat && npm run smoke:runtime-boundary && npm run smoke:dss-boundary && npm run smoke:video-boundary",
+    "smoke": "node scripts/smoke-app.js && npm run smoke:auth-boundary && npm run smoke:auth-login-platform && npm run smoke:device-token-lifecycle && npm run smoke:push-event-log && npm run smoke:device-token-cleanup && npm run smoke:user-management-role-boundary && npm run smoke:event-logs-mission-lookup-failure && npm run smoke:event-log-production-relations && npm run smoke:event-logs-location-client-compat && npm run smoke:realtime-event-log-location-client-compat && npm run smoke:emergency-mission-time && npm run smoke:stale-emergency-mission-time && npm run smoke:recent-emergency-mission-location-refresh && npm run smoke:cached-emergency-mission-location-refresh && npm run smoke:confirm-emergency-mission-time && npm run smoke:confirm-early-accept-overlap && npm run smoke:overdue-mission-accept && npm run smoke:mission-production-relations && npm run smoke:mission-overlap-location-compat && npm run smoke:complete-mission-endtime && npm run smoke:reports-production-relations && npm run smoke:reports-location-client-compat && npm run smoke:runtime-boundary && npm run smoke:dss-boundary && npm run smoke:video-boundary && npm run smoke:location-isolation",
     "smoke:auth-boundary": "node scripts/smoke-auth-boundary.js",
     "smoke:auth-login-platform": "node scripts/smoke-auth-login-platform.js",
     "smoke:device-token-lifecycle": "node scripts/smoke-device-token-lifecycle.js",
@@ -35,7 +35,8 @@
     "smoke:reports-location-client-compat": "node scripts/smoke-reports-location-client-compat.js",
     "smoke:dss-boundary": "node scripts/smoke-dss-boundary.js",
     "smoke:runtime-boundary": "node scripts/smoke-runtime-boundary.js",
-    "smoke:video-boundary": "node scripts/smoke-video-boundary.js"
+    "smoke:video-boundary": "node scripts/smoke-video-boundary.js",
+    "smoke:location-isolation": "node scripts/smoke-location-isolation.js"
   },
   "author": "",
   "license": "ISC",

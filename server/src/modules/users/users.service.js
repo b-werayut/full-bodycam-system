@@ -5,6 +5,7 @@ const USER_SELECT = {
   UserId: true,
   Username: true,
   RoleId: true,
+  LocationCode: true,
   Active: true,
   CreatedAt: true,
   UpdatedAt: true,
@@ -36,10 +37,37 @@ function mapUserWithRole(user, role) {
     username: user.Username,
     roleId: user.RoleId ?? null,
     roleName: role?.RoleName ?? "",
+    locationCode: user.LocationCode ?? null,
     Active: user.Active,
     createdAt: user.CreatedAt,
     updatedAt: user.UpdatedAt,
   };
+}
+
+// แปลง/ตรวจ locationCode จาก payload
+//   undefined        -> ไม่ได้ส่งมา (ไม่แตะค่าเดิม)
+//   null / ""        -> ตั้งเป็น null (เคลียร์ location)
+//   "<code>"         -> ต้องมีใน Location จริง ไม่งั้น error
+async function resolveLocationCode(value) {
+  if (value === undefined) {
+    return { value: undefined };
+  }
+
+  if (value === null || (typeof value === "string" && value.trim() === "")) {
+    return { value: null };
+  }
+
+  if (typeof value !== "string") {
+    return { error: toResult(400, { message: "locationCode must be a string" }) };
+  }
+
+  const locationCode = value.trim();
+  const location = await usersRepository.findLocationByCode(locationCode, { LocationCode: true });
+  if (!location) {
+    return { error: toResult(400, { message: "Location not found" }) };
+  }
+
+  return { value: locationCode };
 }
 
 async function getRoleById(roleId) {
@@ -128,7 +156,7 @@ async function getUserDetails(userIdValue) {
 }
 
 async function createUser(payload = {}) {
-  const { username, password, roleId, status, Active } = payload;
+  const { username, password, roleId, status, Active, locationCode } = payload;
   const normalizedUsername = typeof username === "string" ? username.trim() : "";
 
   if (!normalizedUsername) {
@@ -144,6 +172,11 @@ async function createUser(payload = {}) {
     return toResult(409, { message: "Username already exists" });
   }
 
+  const location = await resolveLocationCode(locationCode);
+  if (location.error) {
+    return location.error;
+  }
+
   const role = await getRoleById(roleId);
   const hashedPassword = await hashPassword(password);
   const active = Active !== undefined ? Boolean(Active) : status ? status === "active" : true;
@@ -154,6 +187,7 @@ async function createUser(payload = {}) {
         Username: normalizedUsername,
         PasswordHash: hashedPassword,
         RoleId: role?.RoleId ?? null,
+        LocationCode: location.value ?? null,
         Active: active,
         UpdatedAt: new Date(),
       },
@@ -174,7 +208,7 @@ async function updateUser(userIdValue, payload = {}, actor = {}) {
     return invalidUserIdResult();
   }
 
-  const { username, roleId, Active, password } = payload;
+  const { username, roleId, Active, password, locationCode } = payload;
   const normalizedUsername = typeof username === "string" ? username.trim() : "";
   const canUpdatePassword = Number(actor?.roleId) === 1;
 
@@ -199,10 +233,16 @@ async function updateUser(userIdValue, payload = {}, actor = {}) {
     }
   }
 
+  const location = await resolveLocationCode(locationCode);
+  if (location.error) {
+    return location.error;
+  }
+
   const role = await getRoleById(roleId);
   const data = {
     ...(normalizedUsername ? { Username: normalizedUsername } : {}),
     ...(role ? { RoleId: role.RoleId } : roleId != null ? { RoleId: null } : {}),
+    ...(location.value !== undefined ? { LocationCode: location.value } : {}),
     ...(Active !== undefined ? { Active: Boolean(Active) } : {}),
     ...(password && canUpdatePassword ? { PasswordHash: await hashPassword(password) } : {}),
     UpdatedAt: new Date(),

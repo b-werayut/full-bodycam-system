@@ -44,7 +44,7 @@ const { getEventLogs } = require("../src/modules/internal-api/eventLogs.controll
 (async () => {
   let statusCode = null;
   let body = null;
-  const req = { query: {} };
+  const req = { query: {}, user: { roleId: 1 } };
   const res = {
     status(code) {
       statusCode = code;

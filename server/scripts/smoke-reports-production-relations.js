@@ -167,7 +167,7 @@ function createResponse() {
 
 (async () => {
   const reportRes = createResponse();
-  await getReport({}, reportRes);
+  await getReport({ user: { roleId: 1 } }, reportRes);
 
   assert.strictEqual(reportRes.statusCode, 200);
   assert.strictEqual(reportFindManyArgs.select.LocationCode, true);
@@ -181,7 +181,7 @@ function createResponse() {
   assert.strictEqual(reportRes.body[0].officerName, "Officer A");
 
   const locationRes = createResponse();
-  await getLocation({}, locationRes);
+  await getLocation({ user: { roleId: 1 } }, locationRes);
 
   assert.strictEqual(locationRes.statusCode, 200);
   assert.strictEqual(locationRes.body.length, 2);
@@ -222,7 +222,7 @@ function createResponse() {
   });
 
   const onlineDevicesRes = createResponse();
-  await getOnlineDevices({}, onlineDevicesRes);
+  await getOnlineDevices({ user: { roleId: 1 } }, onlineDevicesRes);
 
   assert.strictEqual(onlineDevicesRes.statusCode, 200);
   assert.deepStrictEqual(onlineDeviceFindManyArgs.include, {
@@ -244,7 +244,7 @@ function createResponse() {
   assert.strictEqual(onlineDevicesRes.body[0].recordedAt.toISOString(), "2026-06-01T08:00:00.000Z");
 
   const allDevicesRes = createResponse();
-  await getAllDevices({}, allDevicesRes);
+  await getAllDevices({ user: { roleId: 1 } }, allDevicesRes);
 
   assert.strictEqual(allDevicesRes.statusCode, 200);
   assert.deepStrictEqual(allDeviceFindManyArgs.include, onlineDeviceFindManyArgs.include);
@@ -254,7 +254,7 @@ function createResponse() {
   assert.strictEqual(allDevicesRes.body[0].Locations[0].RecordedAt.toISOString(), "2026-06-01T08:00:00.000Z");
 
   const officerRes = createResponse();
-  await getOfficerData({}, officerRes);
+  await getOfficerData({ user: { roleId: 1 } }, officerRes);
 
   assert.strictEqual(officerRes.statusCode, 200);
   assert.strictEqual(officerRes.body[0].officerId, 7);

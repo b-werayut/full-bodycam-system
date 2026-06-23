@@ -89,7 +89,7 @@ require.cache[prismaModulePath] = {
 const { getEventLogs } = require("../src/modules/internal-api/eventLogs.controller");
 
 (async () => {
-  const req = { query: {} };
+  const req = { query: {}, user: { roleId: 1 } };
   const res = {
     statusCode: null,
     body: null,

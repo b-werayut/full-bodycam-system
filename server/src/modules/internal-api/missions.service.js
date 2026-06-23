@@ -1,4 +1,5 @@
 const { prisma } = require("../../lib/prisma");
+const { canAccessLocation } = require("../../utils/locationScope");
 
 const MISSION_STATUS = {
   PENDING: "1",
@@ -28,6 +29,11 @@ const MISSION_STATUS_ALIASES = {
 
 function result(statusCode, body) {
   return { statusCode, body };
+}
+
+// non-admin แตะ mission ได้เฉพาะ location ตัวเอง (admin ผ่านทุก location)
+function forbiddenLocation() {
+  return result(403, { message: "You do not have access to this location" });
 }
 
 function requireField(payload, fieldName) {
@@ -243,6 +249,7 @@ async function findMissionStatus(reportId) {
       StartTime: true,
       EndTime: true,
       OfficerId: true,
+      LocationCode: true,
     },
   });
 }
@@ -361,7 +368,7 @@ function overlappingMissionConflict({ mission, conflictsOnDevice, conflictsOnOff
   };
 }
 
-async function createMission(payload) {
+async function createMission(payload, reqUser) {
   const required = requireField(payload, "reportId");
   if (required) {
     return required;
@@ -380,6 +387,12 @@ async function createMission(payload) {
     return locationReference.error;
   }
 
+  // non-admin สร้าง mission ได้เฉพาะใน location ตัวเอง
+  const targetLocationCode = getMissionLocationCode(payload, locationReference.location);
+  if (!canAccessLocation(reqUser, targetLocationCode)) {
+    return forbiddenLocation();
+  }
+
   const mission = await prisma.missions.create({
     data: missionCreateData(payload, locationReference.location),
   });
@@ -390,7 +403,7 @@ async function createMission(payload) {
   });
 }
 
-async function updateMission(payload) {
+async function updateMission(payload, reqUser) {
   const required = requireField(payload, "reportId");
   if (required) {
     return required;
@@ -402,6 +415,10 @@ async function updateMission(payload) {
 
   if (!mission) {
     return result(404, { message: "Mission not found" });
+  }
+
+  if (!canAccessLocation(reqUser, mission.LocationCode)) {
+    return forbiddenLocation();
   }
 
   if (mission.MissionStatus !== MISSION_STATUS.PENDING && mission.MissionStatus !== MISSION_STATUS.EMERGENCY) {
@@ -429,6 +446,12 @@ async function updateMission(payload) {
     return locationReference.error;
   }
 
+  // ถ้ามีการเปลี่ยน location ของ mission ต้องเป็น location ที่ user เข้าถึงได้ด้วย
+  const targetLocationCode = getMissionLocationCode(payload, locationReference.location);
+  if (targetLocationCode !== undefined && !canAccessLocation(reqUser, targetLocationCode)) {
+    return forbiddenLocation();
+  }
+
   const updated = await prisma.missions.updateMany({
     where: { ReportId: payload.reportId },
     data: missionUpdateData(payload, locationReference.location),
@@ -440,7 +463,7 @@ async function updateMission(payload) {
   });
 }
 
-async function deleteMission(payload) {
+async function deleteMission(payload, reqUser) {
   const reportIdRequired = requireField(payload, "reportId");
   if (reportIdRequired) {
     return reportIdRequired;
@@ -459,6 +482,10 @@ async function deleteMission(payload) {
   const mission = await findMissionStatus(payload.reportId);
   if (!mission) {
     return result(404, { message: "Mission not found" });
+  }
+
+  if (!canAccessLocation(reqUser, mission.LocationCode)) {
+    return forbiddenLocation();
   }
 
   const missionDeviceMismatch = ensureMissionDeviceMatches(mission, device);
@@ -491,7 +518,7 @@ async function deleteMission(payload) {
   });
 }
 
-async function confirmMission(payload) {
+async function confirmMission(payload, reqUser) {
   const reportIdRequired = requireField(payload, "reportId");
   if (reportIdRequired) {
     return reportIdRequired;
@@ -510,6 +537,10 @@ async function confirmMission(payload) {
   const mission = await findMissionStatus(payload.reportId);
   if (!mission) {
     return result(404, { message: "Mission not found" });
+  }
+
+  if (!canAccessLocation(reqUser, mission.LocationCode)) {
+    return forbiddenLocation();
   }
 
   const missionDeviceMismatch = ensureMissionDeviceMatches(mission, device);
@@ -611,7 +642,7 @@ async function confirmMission(payload) {
   });
 }
 
-async function completeMission(payload) {
+async function completeMission(payload, reqUser) {
   const reportIdRequired = requireField(payload, "reportId");
   if (reportIdRequired) {
     return reportIdRequired;
@@ -630,6 +661,10 @@ async function completeMission(payload) {
   const mission = await findMissionStatus(payload.reportId);
   if (!mission) {
     return result(404, { message: "Mission not found" });
+  }
+
+  if (!canAccessLocation(reqUser, mission.LocationCode)) {
+    return forbiddenLocation();
   }
 
   const missionDeviceMismatch = ensureMissionDeviceMatches(mission, device);
@@ -667,7 +702,7 @@ async function completeMission(payload) {
   });
 }
 
-async function cancelMission(payload) {
+async function cancelMission(payload, reqUser) {
   const reportIdRequired = requireField(payload, "reportId");
   if (reportIdRequired) {
     return reportIdRequired;
@@ -686,6 +721,10 @@ async function cancelMission(payload) {
   const mission = await findMissionStatus(payload.reportId);
   if (!mission) {
     return result(404, { message: "Mission not found" });
+  }
+
+  if (!canAccessLocation(reqUser, mission.LocationCode)) {
+    return forbiddenLocation();
   }
 
   const missionDeviceMismatch = ensureMissionDeviceMatches(mission, device);
@@ -723,7 +762,7 @@ async function cancelMission(payload) {
   });
 }
 
-async function deleteCancelledMission(payload) {
+async function deleteCancelledMission(payload, reqUser) {
   const required = requireField(payload, "reportId");
   if (required) {
     return required;
@@ -735,11 +774,16 @@ async function deleteCancelledMission(payload) {
       MissionId: true,
       ReportId: true,
       MissionStatus: true,
+      LocationCode: true,
     },
   });
 
   if (!mission) {
     return result(404, { message: "Mission not found" });
+  }
+
+  if (!canAccessLocation(reqUser, mission.LocationCode)) {
+    return forbiddenLocation();
   }
 
   if (

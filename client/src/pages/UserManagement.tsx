@@ -17,6 +17,7 @@ import {
   resetUserPassword,
   updateUser,
 } from '../services/userService';
+import { getLocations } from '../services/missionService';
 
 interface UserManagementProps {
   darkMode: boolean;
@@ -36,6 +37,11 @@ interface ApiErrorLike {
 interface UserRow extends UserSqlData {
   roleId?: number | null;
   Active?: boolean;
+}
+
+interface LocationOption {
+  locationCode: string;
+  locationName?: string | null;
 }
 
 interface UserDetailData extends UserSqlData {
@@ -166,6 +172,7 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
   const [loadingDetailUserId, setLoadingDetailUserId] = useState<number | null>(null);
 
   const [rawUsers, setRawUsers] = useState<UserRow[]>([]);
+  const [locations, setLocations] = useState<LocationOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -185,6 +192,20 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  useEffect(() => {
+    let active = true;
+    getLocations<LocationOption>()
+      .then((data) => {
+        if (active) setLocations(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch locations:', err);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const users = useMemo(() => {
     return rawUsers.map(u => {
@@ -234,6 +255,7 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
         const result = await updateUser<UserSqlData>(editingUser.userId, {
           username: user.username,
           roleId: user.roleId ?? null,
+          locationCode: user.locationCode || null,
           Active: user.status === 'active',
           ...(canManagePasswords && password ? { password } : {}),
         });
@@ -266,6 +288,7 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
           username: user.username,
           password,
           roleId: user.roleId ?? null,
+          locationCode: user.locationCode || null,
           Active: user.status === 'active',
         });
 
@@ -798,10 +821,10 @@ export function UserManagement({ darkMode, language = 'th' }: UserManagementProp
 
       {/* Modals */}
       {showAddUserModal && (
-        <UserModal user={null} mode="add" darkMode={darkMode} language={language} onClose={() => setShowAddUserModal(false)} onSave={handleSaveUser} translations={translations} canManagePasswords={canManagePasswords} existingUsernames={users.map(u => u.username)} />
+        <UserModal user={null} mode="add" darkMode={darkMode} language={language} onClose={() => setShowAddUserModal(false)} onSave={handleSaveUser} translations={translations} canManagePasswords={canManagePasswords} existingUsernames={users.map(u => u.username)} locations={locations} />
       )}
       {editingUser && (
-        <UserModal user={editingUser} mode="edit" darkMode={darkMode} language={language} onClose={() => setEditingUser(null)} onSave={handleSaveUser} onDelete={canCreateDeleteUsers ? handleDeleteUser : undefined} translations={translations} canManagePasswords={canManagePasswords} existingUsernames={users.map(u => u.username)}/>
+        <UserModal user={editingUser} mode="edit" darkMode={darkMode} language={language} onClose={() => setEditingUser(null)} onSave={handleSaveUser} onDelete={canCreateDeleteUsers ? handleDeleteUser : undefined} translations={translations} canManagePasswords={canManagePasswords} existingUsernames={users.map(u => u.username)} locations={locations}/>
       )}
       {resetPasswordUser && (
         <ResetPasswordModal

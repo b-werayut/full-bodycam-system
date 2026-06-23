@@ -14,6 +14,7 @@ export async function createUser<TUser>(payload: {
   username: string;
   password?: string;
   roleId: number | null;
+  locationCode?: string | null;
   Active: boolean;
 }) {
   const response = await api.post('/users', payload);
@@ -25,6 +26,7 @@ export async function updateUser<TUser>(
   payload: {
     username: string;
     roleId: number | null;
+    locationCode?: string | null;
     Active: boolean;
     password?: string;
   },

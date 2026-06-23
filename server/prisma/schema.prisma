@@ -35,6 +35,9 @@ model Location {
   CreatedAt    DateTime   @default(now()) @db.DateTime
   devices      Devices[]
   Missions     Missions[]
+  Officers     Officers[]
+  Users        Users[]
+  EventLogs    EventLog[]
 
   @@index([CreatedAt])
 }
@@ -96,14 +99,18 @@ model Missions {
 }
 
 model Officers {
-  OfficerId   Int        @id @default(autoincrement())
-  CreatedAt   DateTime   @default(now()) @db.DateTime
-  FirstName   String?    @db.NVarChar(50)
-  LastName    String?    @db.NVarChar(50)
-  Telephone   String?    @db.NVarChar(50)
-  Position    String?    @db.NVarChar(100)
-  OfficerName String?    @db.NVarChar(50)
-  Missions    Missions[]
+  OfficerId    Int        @id @default(autoincrement())
+  CreatedAt    DateTime   @default(now()) @db.DateTime
+  FirstName    String?    @db.NVarChar(50)
+  LastName     String?    @db.NVarChar(50)
+  Telephone    String?    @db.NVarChar(50)
+  Position     String?    @db.NVarChar(100)
+  OfficerName  String?    @db.NVarChar(50)
+  LocationCode String?    @db.NVarChar(50)
+  Location     Location?  @relation(fields: [LocationCode], references: [LocationCode], onUpdate: NoAction)
+  Missions     Missions[]
+
+  @@index([LocationCode])
 }
 
 model Roles {
@@ -118,15 +125,18 @@ model Users {
   Username      String         @unique @db.VarChar(255)
   PasswordHash  String         @db.VarChar(255)
   RoleId        Int?
+  LocationCode  String?        @db.NVarChar(50)
   Active        Boolean        @default(true)
   CreatedAt     DateTime       @default(now()) @db.DateTime
   UpdatedAt     DateTime       @default(now()) @updatedAt @db.DateTime
   LoginLogs     LoginLogs[]
   LoginSessions LoginSession[]
   UserDevices   UserDevices[]
+  Location      Location?      @relation(fields: [LocationCode], references: [LocationCode], onUpdate: NoAction)
   Roles         Roles?         @relation(fields: [RoleId], references: [RoleId], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([RoleId])
+  @@index([LocationCode])
 }
 
 model UserDevices {
@@ -158,13 +168,16 @@ model EventLog {
   IsRead       Boolean   @default(false)
   DeviceCode   String?   @db.NVarChar(50)
   MissionId    Int?
+  LocationCode String?   @db.NVarChar(50)
   Devices      Devices?  @relation(fields: [DeviceCode], references: [DeviceCode], onDelete: NoAction, onUpdate: NoAction)
   Missions     Missions? @relation(fields: [MissionId], references: [MissionId], onDelete: NoAction, onUpdate: NoAction)
+  Location     Location? @relation(fields: [LocationCode], references: [LocationCode], onUpdate: NoAction)
 
   @@index([DeviceCode])
   @@index([MissionId])
   @@index([EventTime])
   @@index([IsRead, EventTime])
+  @@index([LocationCode])
 }
 
 model Proxy_Users {

@@ -20,6 +20,10 @@ function getUserDevicesModel(client = prisma) {
   return client.userDevices ?? client.UserDevices;
 }
 
+function getLocationModel(client = prisma) {
+  return client.location ?? client.Location;
+}
+
 function isUniqueUsernameError(error) {
   const target = error?.meta?.target;
   const fields = Array.isArray(target) ? target : [target];
@@ -96,6 +100,13 @@ async function findRolesByIds(roleIds, select) {
 
   return getRolesModel().findMany({
     where: { RoleId: { in: roleIds } },
+    select,
+  });
+}
+
+async function findLocationByCode(locationCode, select) {
+  return getLocationModel().findFirst({
+    where: { LocationCode: locationCode },
     select,
   });
 }
@@ -281,6 +292,7 @@ module.exports = {
   upsertUserDevice,
   findActiveLoginSessionByRefreshTokenHash,
   findLatestSuccessfulLogin,
+  findLocationByCode,
   findRoleById,
   findRolesByIds,
   findUserById,

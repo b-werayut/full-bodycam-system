@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { getEventLogs } from '../../../services/eventLogService';
+import { getAccessToken } from '../../../services/apiClient';
 import { useNotificationStore } from '../../../stores/notificationStore';
 import { NotificationToast } from '../components/NotificationToast';
 import { playNotificationSound } from '../notificationSound';
@@ -156,7 +157,9 @@ export function useEventLogNotifications({ enabled, darkMode }: UseEventLogNotif
     };
 
     const connectNotificationSocket = () => {
-      const ws = new WebSocket('/ws');
+      // แนบ access token ใน query เพื่อให้ server ผูก user/location กับ socket (ไม่งั้นเป็น anonymous -> ไม่ได้ noti)
+      const token = getAccessToken();
+      const ws = new WebSocket(`/ws${token ? `?token=${encodeURIComponent(token)}` : ''}`);
       notificationWsRef.current = ws;
 
       ws.onmessage = (event) => {

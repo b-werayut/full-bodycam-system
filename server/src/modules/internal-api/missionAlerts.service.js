@@ -96,6 +96,8 @@ async function createOverdueMissionEventLog(mission, now = new Date()) {
       LocationName: mission.Location?.LocationName || null,
       DeviceCode: mission.DeviceCode || null,
       MissionId: mission.MissionId,
+      // ผูก location ของ event log ตาม mission สำหรับกรองตาม location
+      LocationCode: mission.LocationCode ?? null,
       Details: buildOverdueDetails({ mission, officerName, startTimeText }),
       IsRead: false,
     },

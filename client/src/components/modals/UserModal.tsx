@@ -9,6 +9,7 @@ import {
   isEnglishAlphanumericUsername,
   sanitizeEnglishAlphanumericCredential,
 } from '../../lib/userValidation';
+import { SearchableSelect } from '../ui/SearchableSelect';
 
 interface UserModalProps {
   user: UserSqlData | null; 
@@ -21,22 +22,25 @@ interface UserModalProps {
   translations: UserTranslationData;
   canManagePasswords?: boolean;
   existingUsernames?: string[];
+  locations?: Array<{ locationCode: string; locationName?: string | null }>;
 }
 
-export function UserModal({ user, mode, darkMode, onClose, onSave, onDelete, translations, canManagePasswords = false, existingUsernames = [] }: UserModalProps) {
+export function UserModal({ user, mode, darkMode, language, onClose, onSave, onDelete, translations, canManagePasswords = false, existingUsernames = [], locations = [] }: UserModalProps) {
   const [formData, setFormData] = useState<{
     userId: number;
     username: string;
     roleName: string;
     roleId: number;
     status: 'active' | 'inactive';
+    locationCode: string;
   }>(
-    user ? { ...user, roleId: user.roleId ?? ROLE_IDS.officer, status: user.status || 'active' } : {
+    user ? { ...user, roleId: user.roleId ?? ROLE_IDS.officer, status: user.status || 'active', locationCode: user.locationCode ?? '' } : {
       userId: 0,
       username: '',
       roleName: '',
       roleId: ROLE_IDS.officer,
       status: 'active',
+      locationCode: '',
     }
   );
   
@@ -157,6 +161,18 @@ export function UserModal({ user, mode, darkMode, onClose, onSave, onDelete, tra
   //   });
   // };
 
+  // Shared config for the searchable location dropdown (used in both add/edit modes).
+  const locationSelectOptions = locations.map((loc) => ({
+    value: loc.locationCode,
+    // Show only the location name; fall back to the code when a name is missing.
+    label: loc.locationName || loc.locationCode,
+    // Keep the code searchable even though it isn't displayed.
+    keywords: loc.locationCode,
+  }));
+  const locationTriggerClass = `w-full px-4 py-3 pr-10 border rounded-md transition-colors outline-none cursor-pointer focus:border-emerald-500 ${darkMode ? 'border-slate-700 bg-slate-800 text-slate-100' : 'border-slate-200 bg-white text-slate-900'}`;
+  const locationSearchPlaceholder = language === 'th' ? 'ค้นหาสถานที่...' : 'Search location...';
+  const locationEmptyText = language === 'th' ? 'ไม่พบสถานที่' : 'No locations found';
+
   if (mode === 'edit') {
     return (
       <>
@@ -230,6 +246,25 @@ export function UserModal({ user, mode, darkMode, onClose, onSave, onDelete, tra
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Location Dropdown */}
+                <div>
+                  <label className={`block font-semibold text-base mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {translations.location} :
+                  </label>
+                  <SearchableSelect
+                    value={formData.locationCode}
+                    options={locationSelectOptions}
+                    onChange={(locationCode) => setFormData({ ...formData, locationCode })}
+                    placeholder={translations.selectLocation}
+                    searchPlaceholder={locationSearchPlaceholder}
+                    emptyText={locationEmptyText}
+                    clearable
+                    clearLabel={translations.selectLocation}
+                    darkMode={darkMode}
+                    triggerClassName={locationTriggerClass}
+                  />
                 </div>
 
                 {/* Status Dropdown (Active/Inactive) */}
@@ -485,6 +520,27 @@ export function UserModal({ user, mode, darkMode, onClose, onSave, onDelete, tra
                     <option value="active">{translations.active}</option>
                     <option value="inactive">{translations.inactive}</option>
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Location */}
+                <div className="space-y-2">
+                  <label className={`block font-semibold text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {translations.location}
+                  </label>
+                  <SearchableSelect
+                    value={formData.locationCode}
+                    options={locationSelectOptions}
+                    onChange={(locationCode) => setFormData({ ...formData, locationCode })}
+                    placeholder={translations.selectLocation}
+                    searchPlaceholder={locationSearchPlaceholder}
+                    emptyText={locationEmptyText}
+                    clearable
+                    clearLabel={translations.selectLocation}
+                    darkMode={darkMode}
+                    triggerClassName={locationTriggerClass}
+                  />
                 </div>
               </div>
             </div>

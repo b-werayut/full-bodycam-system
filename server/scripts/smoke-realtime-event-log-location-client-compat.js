@@ -25,6 +25,7 @@ const fakePrisma = {
           IsRead: false,
           DeviceCode: "CAM-001",
           MissionId: 10,
+          LocationCode: "LOC-STATION-001",
           Devices: {
             DeviceCode: "CAM-001",
             DeviceName: "BodyCam 001",
@@ -89,6 +90,8 @@ const { getNewEventLogNotifications } = require("../src/modules/realtime/socket.
   assert.strictEqual(notifications[0].id, 51);
   assert.strictEqual(notifications[0].deviceCode, "CAM-001");
   assert.strictEqual(notifications[0].deviceName, "BodyCam 001");
+  // locationCode ต้องติดมากับ notification เพื่อให้ socket handler กรองตาม location ของ client ได้
+  assert.strictEqual(notifications[0].locationCode, "LOC-STATION-001");
   assert.strictEqual(notifications[0].mission.reportId, "INT-001");
   assert.strictEqual(notifications[0].mission.locationCode, "LOC-STATION-001");
   assert.strictEqual(notifications[0].mission.locationName, "Station");

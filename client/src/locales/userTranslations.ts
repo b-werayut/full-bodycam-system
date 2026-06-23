@@ -51,6 +51,8 @@ export interface UserTranslationData {
   fullName: string;
   password: string;
   role: string;
+  location: string;
+  selectLocation: string;
   roleUser: string;
   roleSuperAdmin: string;
   roleAdmin: string;
@@ -147,6 +149,8 @@ export const userTranslations: Record<UserLanguage, UserTranslationData> = {
     fullName: 'ชื่อ-นามสกุล',
     password: 'รหัสผ่าน Password (อย่างน้อย 6 ตัวอักษร)',
     role: 'บทบาท (Role)',
+    location: 'สถานที่ (Location)',
+    selectLocation: 'เลือกสถานที่',
     roleUser: 'ผู้ใช้งาน',
     roleSuperAdmin: 'ผู้ดูแลระบบสูงสุด',
     roleAdmin: 'ผู้ดูแลระบบ',
@@ -241,6 +245,8 @@ export const userTranslations: Record<UserLanguage, UserTranslationData> = {
     fullName: 'Full Name',
     password: 'Password (at least 6 characters)',
     role: 'Role',
+    location: 'Location',
+    selectLocation: 'Select location',
     roleUser: 'User',
     roleSuperAdmin: 'SuperAdmin',
     roleAdmin: 'Admin',

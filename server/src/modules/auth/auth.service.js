@@ -12,6 +12,7 @@ const AUTH_USER_SELECT = {
   Username: true,
   PasswordHash: true,
   RoleId: true,
+  LocationCode: true,
   Active: true,
 };
 
@@ -31,6 +32,7 @@ function mapAuthUser(user, role) {
     username: user.Username,
     roleId: user.RoleId,
     roleName: role?.RoleName ?? "",
+    locationCode: user.LocationCode ?? null,
     securityLevel: role ? securityLevelFromRoleInt(role.SecurityLevel) : "low",
   };
 }
@@ -127,6 +129,7 @@ async function register(payload = {}) {
       UserId: true,
       Username: true,
       RoleId: true,
+      LocationCode: true,
       Active: true,
       CreatedAt: true,
     },
@@ -259,6 +262,7 @@ async function refresh(payload = {}, cookieRefreshToken) {
     UserId: true,
     Username: true,
     RoleId: true,
+    LocationCode: true,
     Active: true,
   });
 
@@ -379,6 +383,7 @@ async function me(authUser) {
     UserId: true,
     Username: true,
     RoleId: true,
+    LocationCode: true,
     Active: true,
   });
 

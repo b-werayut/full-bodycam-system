@@ -55,7 +55,7 @@ const { confirmMission } = require("../src/modules/internal-api/missions.service
   const response = await confirmMission({
     reportId: "EMER-OLD001",
     deviceName: "BodyCam 001",
-  });
+  }, { roleId: 1 });
   const afterConfirm = new Date();
 
   assert.strictEqual(response.statusCode, 200);

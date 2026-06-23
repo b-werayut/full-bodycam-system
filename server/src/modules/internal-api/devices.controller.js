@@ -1,4 +1,5 @@
 const { prisma } = require("../../lib/prisma");
+const { locationScope } = require("../../utils/locationScope");
 
 function decimalToNumber(value) {
   return value?.toNumber?.() ?? value;
@@ -37,6 +38,8 @@ exports.getOnlineDevices = async (req, res) => {
     const devices = await prisma.devices.findMany({
       where: {
         Active: true,
+        // กรองเฉพาะ device ใน location ของ user (admin เห็นทุก location)
+        ...locationScope(req.user),
       },
       include: deviceLocationInclude,
     });
@@ -69,6 +72,8 @@ exports.getOnlineDevices = async (req, res) => {
 exports.getAllDevices = async (req, res) => {
   try {
     const devices = await prisma.devices.findMany({
+      // กรองเฉพาะ device ใน location ของ user (admin เห็นทุก location)
+      where: locationScope(req.user),
       include: deviceLocationInclude,
     });
 

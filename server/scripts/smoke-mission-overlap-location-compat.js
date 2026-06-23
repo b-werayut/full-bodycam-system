@@ -59,7 +59,7 @@ const { createMission } = require("../src/modules/internal-api/missions.service"
     endTime: "2026-06-06T19:58:00.000Z",
     officerId: 1,
     deviceCode: "1000097",
-  });
+  }, { roleId: 1 });
 
   assert.strictEqual(response.statusCode, 409);
   assert.strictEqual(overlapFindArgs.include.Location, undefined);

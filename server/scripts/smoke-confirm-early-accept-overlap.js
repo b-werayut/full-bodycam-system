@@ -84,7 +84,7 @@ const { confirmMission } = require("../src/modules/internal-api/missions.service
   const blocked = await confirmMission({
     reportId: "INT-EARLY",
     deviceName: "BodyCam 001",
-  });
+  }, { roleId: 1 });
 
   assert.strictEqual(blocked.statusCode, 409, "overlapping early accept must be blocked");
   assert.strictEqual(blocked.body.data.reportId, "INT-EXISTING");
@@ -107,7 +107,7 @@ const { confirmMission } = require("../src/modules/internal-api/missions.service
   const ok = await confirmMission({
     reportId: "INT-EARLY",
     deviceName: "BodyCam 001",
-  });
+  }, { roleId: 1 });
   const afterAccept = new Date();
 
   assert.strictEqual(ok.statusCode, 200, "non-overlapping early accept must succeed");
@@ -146,7 +146,7 @@ const { confirmMission } = require("../src/modules/internal-api/missions.service
   const expired = await confirmMission({
     reportId: "INT-EARLY",
     deviceName: "BodyCam 001",
-  });
+  }, { roleId: 1 });
 
   assert.strictEqual(expired.statusCode, 422, "accepting after end time must be blocked");
   assert.strictEqual(expired.body.data.reason, "end-time-passed");
